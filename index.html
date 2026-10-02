@@ -7,6 +7,23 @@
   <meta name="robots" content="noindex, nofollow" />
   <title>Cadastro confirmado | Fenômeno FB Peninga</title>
   <meta name="description" content="Cadastro confirmado. Entre no grupo oficial do Fenômeno FB Peninga." />
+  <!-- Meta Pixel Code -->
+  <script>
+  !function(f,b,e,v,n,t,s)
+  {if(f.fbq)return;n=f.fbq=function(){n.callMethod?
+  n.callMethod.apply(n,arguments):n.queue.push(arguments)};
+  if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';
+  n.queue=[];t=b.createElement(e);t.async=!0;
+  t.src=v;s=b.getElementsByTagName(e)[0];
+  s.parentNode.insertBefore(t,s)}(window, document,'script',
+  'https://connect.facebook.net/en_US/fbevents.js');
+  fbq('init', '1374023327839293');
+  fbq('track', 'PageView');
+  </script>
+  <noscript><img height="1" width="1" style="display:none"
+  src="https://www.facebook.com/tr?id=1374023327839293&ev=PageView&noscript=1"
+  /></noscript>
+  <!-- End Meta Pixel Code -->
   <style>
     :root{--bg:#090909;--surface:#111;--text:#fff;--muted:#b9b9b9;--line:rgba(255,255,255,.10);--whatsapp:#25D366;--whatsapp-hover:#1fbd5a}
     *{box-sizing:border-box} html{-webkit-text-size-adjust:100%;scroll-behavior:smooth}
@@ -51,7 +68,6 @@
     let secondsLeft=REDIRECT_AFTER_SECONDS;
     let redirectStarted=false;
     function trackPageView(){
-      if(typeof window.fbq==="function"){window.fbq("track","PageView")}
       if(typeof window.gtag==="function"){window.gtag("event","page_view",{page_title:document.title,page_location:window.location.href,page_name:"pagina_ponte_fenomeno_fb_peninga"})}
       window.dataLayer=window.dataLayer||[];
       window.dataLayer.push({event:"page_view",page_name:"pagina_ponte_fenomeno_fb_peninga"});
