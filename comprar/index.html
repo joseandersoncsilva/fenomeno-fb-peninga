@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<meta name="theme-color" content="#10120f">
+<title>Coberturas | Fenômeno FB Peninga</title>
+<meta name="description" content="Escolha sua condição de cobertura do Fenômeno FB Peninga.">
+<style>
+:root{--bg:#0c0e0b;--card:#151914;--edge:#30382d;--fg:#f5f4ee;--dim:#bfc3b6;--accent:#d3b57a}*{box-sizing:border-box}body{margin:0;color:var(--fg);background:var(--bg);font:16px/1.5 Inter,system-ui,-apple-system,Segoe UI,sans-serif}main{max-width:850px;margin:auto;padding:24px 18px 70px}.eyebrow{letter-spacing:.19em;font-size:11px;color:var(--accent);font-weight:800;text-transform:uppercase}.hero{text-align:center}.hero img{width:100%;max-height:340px;object-fit:cover;object-position:center;display:block;border-radius:18px;margin:20px 0 22px}.hero h1{font-size:clamp(30px,5vw,50px);margin:8px 0;line-height:1.05;letter-spacing:-.025em}.muted{color:var(--dim)}.hero p{max-width:600px;margin:14px auto 30px}.section{background:var(--card);border:1px solid var(--edge);border-radius:20px;padding:24px;margin-top:18px}h2{font-size:21px;margin:0 0 18px}.packages{display:grid;grid-template-columns:1fr 1fr;gap:14px}.package{display:block;text-align:left;color:inherit;background:#111510;border:1px solid var(--edge);border-radius:14px;padding:18px;cursor:pointer;font:inherit;min-height:135px}.package[aria-pressed=true]{border:2px solid var(--accent);background:#25271d}.package strong{display:block;font-size:20px;margin:6px 0}.hint{display:block;font-size:13px;color:var(--dim)}.tag{font-size:11px;text-transform:uppercase;letter-spacing:.09em;color:var(--accent);font-weight:750}.qty{display:flex;align-items:center;gap:18px}.qty button{border:1px solid var(--edge);color:var(--fg);background:#232820;width:42px;height:42px;border-radius:10px;font-size:23px;cursor:pointer}.qty output{min-width:24px;text-align:center;font-size:21px;font-weight:750}.options{display:grid;gap:12px}.option{display:flex;align-items:flex-start;gap:10px;padding:15px;border:1px solid var(--edge);border-radius:12px;cursor:pointer}.option:has(input:checked){border-color:var(--accent)}input[type=radio]{accent-color:#d3b57a;margin-top:5px}.summary{background:#20251d;border-radius:14px;padding:18px;margin-top:22px}.line{display:flex;justify-content:space-between;gap:15px;margin:8px 0}.line.final{border-top:1px solid #444c3e;padding-top:15px;margin-top:15px;font-size:20px;font-weight:800}.notice{font-size:13px;color:var(--dim);margin-top:15px}.cta{display:block;width:100%;background:var(--accent);color:#191b15;border:0;padding:17px 12px;font:800 15px system-ui;border-radius:12px;margin-top:20px;cursor:pointer}.cta:focus-visible,button:focus-visible{outline:3px solid white;outline-offset:3px}.preview{border:1px dashed #8f956e;padding:12px 14px;border-radius:12px;margin-top:14px;color:#f4e4bc;font-size:13px}.foot{text-align:center;font-size:12px;color:#979e92;margin-top:36px}@media(max-width:590px){.packages{grid-template-columns:1fr}.section{padding:19px}.hero img{max-height:250px}}
+</style>
+</head>
+<body>
+<main>
+<header class="hero">
+<div class="eyebrow">Família Barak do Kelner · Haras Peninga</div>
+<img src="../fenomeno-fb-peninga.webp" alt="Fenômeno FB Peninga em pista">
+<div class="eyebrow">Mangalarga Marchador · Marcha Picada</div>
+<h1>Fenômeno FB Peninga</h1>
+<p class="muted">Uma oportunidade de levar a genética do Fenômeno para o seu projeto. Escolha a condição de cobertura mais adequada.</p>
+</header>
+<section class="section" aria-labelledby="pacotetitle">
+<h2 id="pacotetitle">Escolha seu pacote</h2>
+<div class="packages">
+<button type="button" id="p1" class="package" aria-pressed="false"><span class="tag">Individual</span><strong>1 cobertura</strong><span class="hint">R$ 1.000 no parcelado</span></button>
+<button type="button" id="p3" class="package" aria-pressed="true"><span class="tag">Condição especial</span><strong>3 coberturas</strong><span class="hint">R$ 2.000 no parcelado</span></button>
+</div>
+<div style="margin-top:22px"><strong>Quantidade de pacotes</strong><div class="qty" style="margin-top:12px"><button id="minus" type="button" aria-label="Diminuir quantidade">−</button><output id="qty" aria-live="polite">1</output><button id="plus" type="button" aria-label="Aumentar quantidade">+</button></div></div>
+</section>
+<section class="section" aria-labelledby="pagtitle"><h2 id="pagtitle">Forma de pagamento</h2>
+<div class="options">
+<label class="option"><input type="radio" name="pay" value="installments" checked><span><strong>Reserva com boleto inicial</strong><span class="hint">R$ 100 por pacote agora. As demais parcelas serão formalizadas pelo comercial: 10 parcelas totais por pacote individual ou 20 por pacote de 3 coberturas.</span></span></label>
+<label class="option"><input type="radio" name="pay" value="cash"><span><strong>À vista — 10% de desconto</strong><span class="hint">Pagamento integral em boleto, com desconto aplicado ao total.</span></span></label>
+</div>
+<div class="summary" aria-live="polite">
+<div class="line"><span>Pacotes selecionados</span><strong id="linepkg">1 × 3 coberturas</strong></div>
+<div class="line"><span>Total de coberturas</span><strong id="linecovers">3</strong></div>
+<div class="line"><span>Valor da contratação</span><strong id="linetotal">R$ 2.000,00</strong></div>
+<div class="line"><span id="discountlabel">Saldo após o pagamento inicial</span><strong id="linedue">R$ 1.900,00</strong></div>
+<div class="line final"><span id="initiallabel">Boleto inicial</span><strong id="lineinitial">R$ 100,00</strong></div>
+</div>
+<p class="notice">A reserva depende de pagamento confirmado. Após a confirmação, a equipe comercial entrará em contato para formalização do contrato e das parcelas restantes, quando aplicável.</p>
+<button class="cta" type="button" id="continue">Ver resumo da solicitação</button>
+<div id="preview" class="preview" role="status" hidden>Versão de prévia: nenhuma cobrança é emitida aqui. A confirmação e o cadastro do comprador serão ativados depois da conexão segura com o Asaas.</div>
+</section>
+<footer class="foot">Família Barak do Kelner · Fenômeno FB Peninga<br>Prévia de layout, sem processamento de pagamentos</footer>
+</main>
+<script>
+(()=>{let pkg=3,qty=1;const $=id=>document.getElementById(id);const money=n=>n.toLocaleString('pt-BR',{style:'currency',currency:'BRL'});const render=()=>{const cash=document.querySelector('input[name=pay]:checked').value==='cash';const full=(pkg===3?2000:1000)*qty;const total=cash?full*.9:full;const initial=cash?total:100*qty;$('p1').setAttribute('aria-pressed',String(pkg===1));$('p3').setAttribute('aria-pressed',String(pkg===3));$('qty').textContent=qty;$('linepkg').textContent=qty+' × '+pkg+(pkg===1?' cobertura':' coberturas');$('linecovers').textContent=pkg*qty;$('linetotal').textContent=money(total);$('discountlabel').textContent=cash?'Desconto aplicado':'Saldo após o pagamento inicial';$('linedue').textContent=cash?money(full-total):money(total-initial);$('initiallabel').textContent=cash?'Total à vista':'Boleto inicial';$('lineinitial').textContent=money(initial);$('preview').hidden=true};$('p1').onclick=()=>{pkg=1;render()};$('p3').onclick=()=>{pkg=3;render()};$('minus').onclick=()=>{qty=Math.max(1,qty-1);render()};$('plus').onclick=()=>{qty=Math.min(500,qty+1);render()};document.querySelectorAll('input[name=pay]').forEach(el=>el.onchange=render);$('continue').onclick=()=>$('preview').hidden=false;render()})();
+</script>
+</body></html>
