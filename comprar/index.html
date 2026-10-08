@@ -39,6 +39,33 @@
  .approved-copy{width:100%;max-width:none}
  .approved-cta{width:100%}
 }
+
+/* Refinamento responsivo aprovado: sem alterações na imagem original */
+.approved-highlight{margin:0 0 14px;display:flex;flex-direction:column;align-items:flex-start;gap:4px;color:#edd39b;border-left:3px solid #d3b57a;padding:8px 11px;background:linear-gradient(90deg,rgba(211,181,122,.14),transparent);max-width:max-content}
+.approved-highlight span{font-size:10px;font-weight:850;letter-spacing:.1em}
+.approved-highlight strong{font-size:clamp(15px,1.55vw,20px);letter-spacing:.02em;line-height:1.2}
+@media(min-width:851px){
+ .approved-highlight{margin-bottom:13px}
+ .approved-copy .approved-condition{display:none}
+}
+@media(max-width:850px){
+ .approved-hero{display:flex;flex-direction:column}
+ .approved-copy{display:contents}
+ .approved-kicker{order:1;position:relative;z-index:2;margin:0;padding:18px 18px 10px;background:#080e0b}
+ .approved-highlight{order:2;position:relative;z-index:2;align-self:flex-start;margin:0 18px 4px;padding:8px 10px}
+ .approved-image{order:3;position:relative;width:100%;margin:0;overflow:hidden}
+ .approved-image:before,.approved-image:after{content:"";pointer-events:none;position:absolute;left:0;right:0;height:14%;z-index:2}
+ .approved-image:before{top:0;background:linear-gradient(180deg,#080e0b 0%,rgba(8,14,11,0) 100%)}
+ .approved-image:after{bottom:0;background:linear-gradient(0deg,#080e0b 0%,rgba(8,14,11,0) 100%)}
+ .approved-image img{display:block;width:100%;height:auto;object-fit:contain}
+ .approved-copy h1{order:4;padding:0 18px;margin:0 0 10px;font-size:clamp(27px,7vw,36px);max-width:none}
+ .approved-copy>p:not(.approved-condition){order:5;padding:0 18px;margin:0 0 10px;font-size:14px}
+ .approved-copy .approved-condition{display:none}
+ .approved-chips{order:6;padding:0 18px;margin:0 0 13px}
+ .approved-chips li{font-size:11px;padding:7px 9px}
+ .approved-cta{order:7;align-self:stretch;width:auto;margin:0 18px 9px;padding:14px 12px;font-size:12px}
+ .approved-date{order:8;padding:0 18px 20px;margin:0;font-size:12px}
+}
 </style>
 </head>
 <body>
@@ -46,6 +73,7 @@
 <header class="approved-hero" id="inicio">
   <div class="approved-copy">
     <div class="approved-kicker">LANÇAMENTO OFICIAL • 16 DE OUTUBRO</div>
+    <div class="approved-highlight"><span>CONDIÇÃO ESPECIAL DE LANÇAMENTO</span><strong>PRIMEIRAS 100 AQUISIÇÕES</strong></div>
     <h1>O legado de Barak do Kelner continua.<br>E agora pode chegar ao seu criatório.</h1>
     <p>Fenômeno FB Peninga, filho de Barak do Kelner, reúne genética, resultado em pista e mais de 16 premiações em uma trajetória que segue sendo construída.</p>
     <p class="approved-condition">Condição especial limitada às primeiras 100 aquisições.</p>
