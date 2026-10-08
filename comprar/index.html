@@ -11,16 +11,35 @@
 
 /* Secao Oferta */
 .offer-section{padding-top:38px;text-align:center;scroll-margin-top:20px}.offer-section h2{font-size:clamp(27px,4.6vw,40px);line-height:1.14;letter-spacing:-.03em;margin:9px auto 10px;max-width:650px}.offer-intro{color:var(--dim);max-width:620px;margin:0 auto 25px}.offers{display:grid;grid-template-columns:1.13fr 1fr;gap:18px;text-align:left;align-items:stretch}.offer-card{border:1px solid var(--edge);background:var(--card);border-radius:19px;padding:27px 24px;display:flex;flex-direction:column;gap:13px}.offer-card.featured{background:linear-gradient(155deg,#243025,#111710 74%);border:1.5px solid var(--accent);box-shadow:0 12px 45px #0005}.offer-label{font-size:11px;letter-spacing:.11em;font-weight:850;color:var(--accent)}.offer-card h3{font-size:26px;letter-spacing:-.025em;line-height:1.15;margin:2px 0}.offer-price{font-size:clamp(35px,5vw,45px);font-weight:850;letter-spacing:-.045em;line-height:1.05}.offer-installments{font-weight:750;font-size:16px}.offer-benefit{font-size:14px;color:#dadfd5;line-height:1.5}.offer-spacer{flex:1;min-height:12px}.offer-cta{display:block;text-align:center;background:var(--accent);color:#161a13;text-decoration:none;font-size:13px;font-weight:850;padding:16px 12px;border-radius:12px;letter-spacing:.01em}.offer-cta.secondary{background:transparent;border:1px solid #777e6b;color:#f5f4ee}.offer-cta:hover{filter:brightness(1.08)}.offer-cta:focus-visible{outline:3px solid #fff;outline-offset:3px}.how{margin-top:24px;background:#141914;border:1px solid var(--edge);border-radius:18px;padding:25px;text-align:left}.how h3{margin:0 0 18px;font-size:22px}.how-steps{list-style:none;padding:0;margin:0;display:grid;grid-template-columns:1fr 1fr;gap:18px}.how-steps li{display:flex;align-items:flex-start;gap:12px;color:#e0e3da;font-size:14px}.step-num{border:1px solid #676f59;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;flex:none;width:29px;height:29px;color:var(--accent);font-weight:750}.opening{text-align:center;margin:25px auto 8px}.opening span{display:block;color:var(--accent);font-size:11px;font-weight:800;letter-spacing:.16em}.opening strong{display:block;font-size:24px;letter-spacing:.04em;margin-top:4px}.offer-preview-note{font-size:12px;color:var(--dim);text-align:center;margin:12px 0 0}@media(max-width:650px){.offer-section{padding-top:25px}.offers{grid-template-columns:1fr;gap:13px}.offer-card{padding:23px 20px}.offer-card.featured{order:0}.offer-card:not(.featured){order:1}.offer-card h3{font-size:23px}.how{padding:21px 18px}.how-steps{grid-template-columns:1fr;gap:15px}.opening strong{font-size:22px}}
+
+/* Hero aprovado - mobile: copy acima da fotografia, desktop: area escura esquerda */
+.approved-hero{position:relative;background:#080e0b;border-radius:24px;overflow:hidden;margin-bottom:12px;border:1px solid rgba(211,181,122,.12)}
+.approved-copy{position:relative;z-index:2;padding:24px 20px 18px;background:#080e0b}
+.approved-kicker{font-size:11px;color:#d3b57a;letter-spacing:.12em;font-weight:900;margin-bottom:16px}
+.approved-copy h1{font-size:clamp(29px,6.2vw,56px);line-height:1.08;letter-spacing:-.035em;margin:0 0 16px;max-width:17ch}
+.approved-copy p{font-size:15px;color:#f0f0eb;line-height:1.55;margin:0 0 12px;max-width:45ch}
+.approved-copy .approved-condition{color:#e3c992;font-weight:800;margin-top:14px}
+.approved-chips{display:flex;flex-wrap:wrap;gap:8px;padding:0;margin:16px 0;list-style:none}
+.approved-chips li{font-size:12px;font-weight:750;padding:8px 10px;border:1px solid #536351;border-radius:50px;background:#152019;color:#f7f7f2}
+.approved-cta{display:inline-flex;align-items:center;justify-content:center;text-align:center;background:#d3b57a;color:#10150f;padding:16px 20px;border-radius:11px;font-size:13px;font-weight:900;line-height:1.35;text-decoration:none}
+.approved-date{font-size:13px;color:#efdec0;margin-top:12px;font-weight:700}
+.approved-image,.approved-image img{display:block;width:100%;height:auto}
+@media(min-width:851px){.approved-hero{min-height:540px;display:flex;align-items:center}.approved-image{position:absolute;inset:0;z-index:0}.approved-image img{width:100%;height:100%;object-fit:contain;object-position:center}.approved-copy{width:48%;padding:28px 0 28px 4%;background:transparent}.approved-copy h1{font-size:clamp(30px,3.6vw,49px)}.approved-copy p{font-size:14px;max-width:37ch}.approved-chips li{font-size:11px}.approved-image{height:100%;overflow:hidden}}
 </style>
 </head>
 <body>
 <main>
-<header class="hero">
-<div class="eyebrow">Família Barak do Kelner · Haras Peninga</div>
-<img src="../fenomeno-fb-peninga.webp" alt="Fenômeno FB Peninga em pista">
-<div class="eyebrow">Mangalarga Marchador · Marcha Picada</div>
-<h1>Fenômeno FB Peninga</h1>
-<p class="muted">Uma oportunidade de levar a genética do Fenômeno para o seu projeto. Escolha a condição de cobertura mais adequada.</p>
+<header class="approved-hero" id="inicio">
+  <div class="approved-copy">
+    <div class="approved-kicker">LANÇAMENTO OFICIAL • 16 DE OUTUBRO</div>
+    <h1>O legado de Barak do Kelner continua.<br>E agora pode chegar ao seu criatório.</h1>
+    <p>Fenômeno FB Peninga, filho de Barak do Kelner, reúne genética, resultado em pista e mais de 16 premiações em uma trajetória que segue sendo construída.</p>
+    <p class="approved-condition">Condição especial limitada às primeiras 100 aquisições.</p>
+    <ul class="approved-chips"><li>Filho de Barak do Kelner</li><li>+16 premiações</li><li>Marcha Picada</li></ul>
+    <a class="approved-cta" href="#oferta">QUERO ACESSAR A CONDIÇÃO DE LANÇAMENTO</a>
+    <div class="approved-date">Abertura oficial em 16/10 às 06h</div>
+  </div>
+  <picture class="approved-image"><source media="(min-width: 851px)" srcset="fenomeno-hero-desktop.png"><img src="fenomeno-hero-mobile.png" alt="Composição oficial aprovada do Fenômeno FB Peninga, Barak do Kelner e seus proprietários" width="941" height="1672" fetchpriority="high"></picture>
 </header>
 
 <section class="offer-section" id="oferta" aria-labelledby="offer-title">
