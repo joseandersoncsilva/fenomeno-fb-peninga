@@ -8,6 +8,9 @@
 <meta name="description" content="Escolha sua condição de cobertura do Fenômeno FB Peninga.">
 <style>
 :root{--bg:#0c0e0b;--card:#151914;--edge:#30382d;--fg:#f5f4ee;--dim:#bfc3b6;--accent:#d3b57a}*{box-sizing:border-box}body{margin:0;color:var(--fg);background:var(--bg);font:16px/1.5 Inter,system-ui,-apple-system,Segoe UI,sans-serif}main{max-width:850px;margin:auto;padding:24px 18px 70px}.eyebrow{letter-spacing:.19em;font-size:11px;color:var(--accent);font-weight:800;text-transform:uppercase}.hero{text-align:center}.hero img{width:100%;max-height:340px;object-fit:cover;object-position:center;display:block;border-radius:18px;margin:20px 0 22px}.hero h1{font-size:clamp(30px,5vw,50px);margin:8px 0;line-height:1.05;letter-spacing:-.025em}.muted{color:var(--dim)}.hero p{max-width:600px;margin:14px auto 30px}.section{background:var(--card);border:1px solid var(--edge);border-radius:20px;padding:24px;margin-top:18px}h2{font-size:21px;margin:0 0 18px}.packages{display:grid;grid-template-columns:1fr 1fr;gap:14px}.package{display:block;text-align:left;color:inherit;background:#111510;border:1px solid var(--edge);border-radius:14px;padding:18px;cursor:pointer;font:inherit;min-height:135px}.package[aria-pressed=true]{border:2px solid var(--accent);background:#25271d}.package strong{display:block;font-size:20px;margin:6px 0}.hint{display:block;font-size:13px;color:var(--dim)}.tag{font-size:11px;text-transform:uppercase;letter-spacing:.09em;color:var(--accent);font-weight:750}.qty{display:flex;align-items:center;gap:18px}.qty button{border:1px solid var(--edge);color:var(--fg);background:#232820;width:42px;height:42px;border-radius:10px;font-size:23px;cursor:pointer}.qty output{min-width:24px;text-align:center;font-size:21px;font-weight:750}.options{display:grid;gap:12px}.option{display:flex;align-items:flex-start;gap:10px;padding:15px;border:1px solid var(--edge);border-radius:12px;cursor:pointer}.option:has(input:checked){border-color:var(--accent)}input[type=radio]{accent-color:#d3b57a;margin-top:5px}.summary{background:#20251d;border-radius:14px;padding:18px;margin-top:22px}.line{display:flex;justify-content:space-between;gap:15px;margin:8px 0}.line.final{border-top:1px solid #444c3e;padding-top:15px;margin-top:15px;font-size:20px;font-weight:800}.notice{font-size:13px;color:var(--dim);margin-top:15px}.cta{display:block;width:100%;background:var(--accent);color:#191b15;border:0;padding:17px 12px;font:800 15px system-ui;border-radius:12px;margin-top:20px;cursor:pointer}.cta:focus-visible,button:focus-visible{outline:3px solid white;outline-offset:3px}.preview{border:1px dashed #8f956e;padding:12px 14px;border-radius:12px;margin-top:14px;color:#f4e4bc;font-size:13px}.foot{text-align:center;font-size:12px;color:#979e92;margin-top:36px}@media(max-width:590px){.packages{grid-template-columns:1fr}.section{padding:19px}.hero img{max-height:250px}}
+
+/* Secao Oferta */
+.offer-section{padding-top:38px;text-align:center;scroll-margin-top:20px}.offer-section h2{font-size:clamp(27px,4.6vw,40px);line-height:1.14;letter-spacing:-.03em;margin:9px auto 10px;max-width:650px}.offer-intro{color:var(--dim);max-width:620px;margin:0 auto 25px}.offers{display:grid;grid-template-columns:1.13fr 1fr;gap:18px;text-align:left;align-items:stretch}.offer-card{border:1px solid var(--edge);background:var(--card);border-radius:19px;padding:27px 24px;display:flex;flex-direction:column;gap:13px}.offer-card.featured{background:linear-gradient(155deg,#243025,#111710 74%);border:1.5px solid var(--accent);box-shadow:0 12px 45px #0005}.offer-label{font-size:11px;letter-spacing:.11em;font-weight:850;color:var(--accent)}.offer-card h3{font-size:26px;letter-spacing:-.025em;line-height:1.15;margin:2px 0}.offer-price{font-size:clamp(35px,5vw,45px);font-weight:850;letter-spacing:-.045em;line-height:1.05}.offer-installments{font-weight:750;font-size:16px}.offer-benefit{font-size:14px;color:#dadfd5;line-height:1.5}.offer-spacer{flex:1;min-height:12px}.offer-cta{display:block;text-align:center;background:var(--accent);color:#161a13;text-decoration:none;font-size:13px;font-weight:850;padding:16px 12px;border-radius:12px;letter-spacing:.01em}.offer-cta.secondary{background:transparent;border:1px solid #777e6b;color:#f5f4ee}.offer-cta:hover{filter:brightness(1.08)}.offer-cta:focus-visible{outline:3px solid #fff;outline-offset:3px}.how{margin-top:24px;background:#141914;border:1px solid var(--edge);border-radius:18px;padding:25px;text-align:left}.how h3{margin:0 0 18px;font-size:22px}.how-steps{list-style:none;padding:0;margin:0;display:grid;grid-template-columns:1fr 1fr;gap:18px}.how-steps li{display:flex;align-items:flex-start;gap:12px;color:#e0e3da;font-size:14px}.step-num{border:1px solid #676f59;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;flex:none;width:29px;height:29px;color:var(--accent);font-weight:750}.opening{text-align:center;margin:25px auto 8px}.opening span{display:block;color:var(--accent);font-size:11px;font-weight:800;letter-spacing:.16em}.opening strong{display:block;font-size:24px;letter-spacing:.04em;margin-top:4px}.offer-preview-note{font-size:12px;color:var(--dim);text-align:center;margin:12px 0 0}@media(max-width:650px){.offer-section{padding-top:25px}.offers{grid-template-columns:1fr;gap:13px}.offer-card{padding:23px 20px}.offer-card.featured{order:0}.offer-card:not(.featured){order:1}.offer-card h3{font-size:23px}.how{padding:21px 18px}.how-steps{grid-template-columns:1fr;gap:15px}.opening strong{font-size:22px}}
 </style>
 </head>
 <body>
@@ -19,7 +22,42 @@
 <h1>Fenômeno FB Peninga</h1>
 <p class="muted">Uma oportunidade de levar a genética do Fenômeno para o seu projeto. Escolha a condição de cobertura mais adequada.</p>
 </header>
-<section class="section" aria-labelledby="pacotetitle">
+
+<section class="offer-section" id="oferta" aria-labelledby="offer-title">
+  <div class="eyebrow">Oportunidade do lançamento</div>
+  <h2 id="offer-title">Escolha como fazer parte dessa nova etapa</h2>
+  <p class="offer-intro">Condição especial de lançamento do Fenômeno FB Peninga, limitada às primeiras 100 aquisições.</p>
+  <div class="offers">
+    <article class="offer-card featured">
+      <span class="offer-label">CONDIÇÃO ESPECIAL DE LANÇAMENTO</span>
+      <h3>3 COBERTURAS</h3>
+      <div class="offer-price">R$ 2.000</div>
+      <div class="offer-installments">Até 20x de R$ 100 sem juros</div>
+      <div class="offer-benefit">Economia de R$ 1.000 em relação à aquisição individual de 3 coberturas.</div>
+      <div class="offer-spacer"></div>
+      <a class="offer-cta" href="#selecionar-pacote" data-package="3">QUERO O PACOTE DE 3 COBERTURAS</a>
+    </article>
+    <article class="offer-card">
+      <span class="offer-label">AQUISIÇÃO INDIVIDUAL</span>
+      <h3>1 COBERTURA</h3>
+      <div class="offer-price">R$ 1.000</div>
+      <div class="offer-spacer"></div>
+      <a class="offer-cta secondary" href="#selecionar-pacote" data-package="1">QUERO 1 COBERTURA</a>
+    </article>
+  </div>
+  <div class="how" aria-labelledby="how-title">
+    <h3 id="how-title">Como funciona a aquisição</h3>
+    <ol class="how-steps">
+      <li><span class="step-num">1</span><span>Escolha sua condição.</span></li>
+      <li><span class="step-num">2</span><span>O link direciona para o pagamento da primeira parcela/entrada.</span></li>
+      <li><span class="step-num">3</span><span>O pagamento confirma a aquisição dentro da condição disponível.</span></li>
+      <li><span class="step-num">4</span><span>Nosso time comercial entra em contato para formalizar o contrato e orientar os próximos procedimentos.</span></li>
+    </ol>
+  </div>
+  <div class="opening"><span>ABERTURA OFICIAL</span><strong>16/10 • 06H</strong></div>
+  <p class="offer-preview-note">Página em prévia. Nenhum pagamento será gerado nesta etapa.</p>
+</section>
+<section class="section" id="selecionar-pacote" aria-labelledby="pacotetitle">
 <h2 id="pacotetitle">Escolha seu pacote</h2>
 <div class="packages">
 <button type="button" id="p1" class="package" aria-pressed="false"><span class="tag">Individual</span><strong>1 cobertura</strong><span class="hint">R$ 1.000 no parcelado</span></button>
@@ -46,6 +84,6 @@
 <footer class="foot">Família Barak do Kelner · Fenômeno FB Peninga<br>Prévia de layout, sem processamento de pagamentos</footer>
 </main>
 <script>
-(()=>{let pkg=3,qty=1;const $=id=>document.getElementById(id);const money=n=>n.toLocaleString('pt-BR',{style:'currency',currency:'BRL'});const render=()=>{const cash=document.querySelector('input[name=pay]:checked').value==='cash';const full=(pkg===3?2000:1000)*qty;const total=cash?full*.9:full;const initial=cash?total:100*qty;$('p1').setAttribute('aria-pressed',String(pkg===1));$('p3').setAttribute('aria-pressed',String(pkg===3));$('qty').textContent=qty;$('linepkg').textContent=qty+' × '+pkg+(pkg===1?' cobertura':' coberturas');$('linecovers').textContent=pkg*qty;$('linetotal').textContent=money(total);$('discountlabel').textContent=cash?'Desconto aplicado':'Saldo após o pagamento inicial';$('linedue').textContent=cash?money(full-total):money(total-initial);$('initiallabel').textContent=cash?'Total à vista':'Boleto inicial';$('lineinitial').textContent=money(initial);$('preview').hidden=true};$('p1').onclick=()=>{pkg=1;render()};$('p3').onclick=()=>{pkg=3;render()};$('minus').onclick=()=>{qty=Math.max(1,qty-1);render()};$('plus').onclick=()=>{qty=Math.min(500,qty+1);render()};document.querySelectorAll('input[name=pay]').forEach(el=>el.onchange=render);$('continue').onclick=()=>$('preview').hidden=false;render()})();
+(()=>{let pkg=3,qty=1;const $=id=>document.getElementById(id);const money=n=>n.toLocaleString('pt-BR',{style:'currency',currency:'BRL'});const render=()=>{const cash=document.querySelector('input[name=pay]:checked').value==='cash';const full=(pkg===3?2000:1000)*qty;const total=cash?full*.9:full;const initial=cash?total:100*qty;$('p1').setAttribute('aria-pressed',String(pkg===1));$('p3').setAttribute('aria-pressed',String(pkg===3));$('qty').textContent=qty;$('linepkg').textContent=qty+' × '+pkg+(pkg===1?' cobertura':' coberturas');$('linecovers').textContent=pkg*qty;$('linetotal').textContent=money(total);$('discountlabel').textContent=cash?'Desconto aplicado':'Saldo após o pagamento inicial';$('linedue').textContent=cash?money(full-total):money(total-initial);$('initiallabel').textContent=cash?'Total à vista':'Boleto inicial';$('lineinitial').textContent=money(initial);$('preview').hidden=true};$('p1').onclick=()=>{pkg=1;render()};$('p3').onclick=()=>{pkg=3;render()};$('minus').onclick=()=>{qty=Math.max(1,qty-1);render()};$('plus').onclick=()=>{qty=Math.min(500,qty+1);render()};document.querySelectorAll('input[name=pay]').forEach(el=>el.onchange=render);document.querySelectorAll('[data-package]').forEach(el=>el.addEventListener('click',()=>{pkg=Number(el.dataset.package);render()}));$('continue').onclick=()=>$('preview').hidden=false;render()})();
 </script>
 </body></html>
