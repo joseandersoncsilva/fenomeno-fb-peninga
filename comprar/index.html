@@ -88,6 +88,20 @@
  .approved-chips{order:7;justify-content:center;padding:0 12px;margin:0 0 10px}
  .approved-date{order:8;text-align:center;margin:0;padding:0 12px 17px}
 }
+
+/* Formulário do comprador — visual alinhado ao pré-checkout */
+.buyer-section{scroll-margin-top:24px}
+.buyer-intro{margin:0 0 18px;line-height:1.55}
+.buyer-grid{display:grid;grid-template-columns:1fr 1fr;gap:15px}
+.buyer-grid label{display:flex;flex-direction:column;gap:7px;font-size:13px;font-weight:750;color:#eee}
+.buyer-grid input,.buyer-grid select{width:100%;min-height:46px;border:1px solid #455044;background:#0d130f;color:#fff;border-radius:10px;padding:10px 12px;font:inherit;font-size:15px}
+.buyer-grid input:focus,.buyer-grid select:focus{outline:2px solid #d3b57a;outline-offset:1px}
+.buyer-grid input[aria-invalid="true"],.buyer-grid select[aria-invalid="true"]{border-color:#e4a092}
+.buyer-consent{display:flex;gap:10px;margin-top:20px;color:#cfd6ce;font-size:13px;line-height:1.45;align-items:flex-start}
+.buyer-consent input{margin-top:3px;accent-color:#d3b57a}
+.buyer-consent a{text-decoration:underline;color:#e8cc97}
+.buyer-disclaimer{margin-top:12px}
+@media(max-width:640px){.buyer-grid{grid-template-columns:1fr}}
 </style>
 </head>
 <body>
@@ -164,9 +178,27 @@
 <button class="cta" type="button" id="continue">Ver resumo da solicitação</button>
 <div id="preview" class="preview" role="status" hidden>Versão de prévia: nenhuma cobrança é emitida aqui. A confirmação e o cadastro do comprador serão ativados depois da conexão segura com o Asaas.</div>
 </section>
+<section class="section buyer-section" id="dados-comprador" aria-labelledby="buyer-title">
+<h2 id="buyer-title">Dados do comprador</h2>
+<p class="hint buyer-intro">Confira o resumo acima e preencha seus dados para preparar a solicitação. Nesta versão de testes, nenhuma informação será enviada.</p>
+<form id="buyer-form" novalidate>
+<div class="buyer-grid">
+<label>Nome completo<input name="fullName" autocomplete="name" maxlength="120" required placeholder="Seu nome completo"></label>
+<label>CPF<input name="cpf" inputmode="numeric" autocomplete="off" maxlength="14" required placeholder="000.000.000-00"></label>
+<label>WhatsApp com DDD<input name="phone" type="tel" inputmode="tel" autocomplete="tel" maxlength="16" required placeholder="(73) 99999-9999"></label>
+<label>E-mail<input name="email" type="email" autocomplete="email" maxlength="160" required placeholder="voce@exemplo.com"></label>
+<label>Cidade<input name="city" autocomplete="address-level2" maxlength="90" required placeholder="Sua cidade"></label>
+<label>Estado<select name="state" required><option value="">Selecione o estado</option><option>AC</option><option>AL</option><option>AP</option><option>AM</option><option>BA</option><option>CE</option><option>DF</option><option>ES</option><option>GO</option><option>MA</option><option>MT</option><option>MS</option><option>MG</option><option>PA</option><option>PB</option><option>PR</option><option>PE</option><option>PI</option><option>RJ</option><option>RN</option><option>RS</option><option>RO</option><option>RR</option><option>SC</option><option>SP</option><option>SE</option><option>TO</option></select></label>
+</div>
+<label class="buyer-consent"><input name="privacy" type="checkbox" required><span>Li e concordo com a <a href="/privacidade.html" target="_blank" rel="noopener noreferrer">Política de Privacidade</a> e autorizo o uso dos dados para contato e formalização da compra.</span></label>
+<button class="cta" type="submit">Revisar dados e valor da entrada</button>
+<p class="hint buyer-disclaimer">Ainda não há emissão de boleto ou confirmação automática de reserva nesta versão.</p>
+<div id="buyer-result" class="preview" role="status" aria-live="polite" hidden></div>
+</form>
+</section>
 <footer class="foot">Família Barak do Kelner · Fenômeno FB Peninga<br>Prévia de layout, sem processamento de pagamentos</footer>
 </main>
 <script>
-(()=>{let pkg=3,qty=1;const $=id=>document.getElementById(id);const money=n=>n.toLocaleString('pt-BR',{style:'currency',currency:'BRL'});const render=()=>{const cash=document.querySelector('input[name=pay]:checked').value==='cash';const full=(pkg===3?2000:1000)*qty;const total=cash?full*.9:full;const initial=cash?total:100*qty;$('p1').setAttribute('aria-pressed',String(pkg===1));$('p3').setAttribute('aria-pressed',String(pkg===3));$('qty').textContent=qty;$('linepkg').textContent=qty+' × '+pkg+(pkg===1?' cobertura':' coberturas');$('linecovers').textContent=pkg*qty;$('linetotal').textContent=money(total);$('discountlabel').textContent=cash?'Desconto aplicado':'Saldo após o pagamento inicial';$('linedue').textContent=cash?money(full-total):money(total-initial);$('initiallabel').textContent=cash?'Total à vista':'Boleto inicial';$('lineinitial').textContent=money(initial);$('preview').hidden=true};$('p1').onclick=()=>{pkg=1;render()};$('p3').onclick=()=>{pkg=3;render()};$('minus').onclick=()=>{qty=Math.max(1,qty-1);render()};$('plus').onclick=()=>{qty=Math.min(500,qty+1);render()};document.querySelectorAll('input[name=pay]').forEach(el=>el.onchange=render);document.querySelectorAll('[data-package]').forEach(el=>el.addEventListener('click',()=>{pkg=Number(el.dataset.package);render()}));$('continue').onclick=()=>$('preview').hidden=false;render()})();
+(()=>{let pkg=3,qty=1;const $=id=>document.getElementById(id);const money=n=>n.toLocaleString('pt-BR',{style:'currency',currency:'BRL'});const render=()=>{const cash=document.querySelector('input[name=pay]:checked').value==='cash';const full=(pkg===3?2000:1000)*qty;const total=cash?full*.9:full;const initial=cash?total:100*qty;$('p1').setAttribute('aria-pressed',String(pkg===1));$('p3').setAttribute('aria-pressed',String(pkg===3));$('qty').textContent=qty;$('linepkg').textContent=qty+' × '+pkg+(pkg===1?' cobertura':' coberturas');$('linecovers').textContent=pkg*qty;$('linetotal').textContent=money(total);$('discountlabel').textContent=cash?'Desconto aplicado':'Saldo após o pagamento inicial';$('linedue').textContent=cash?money(full-total):money(total-initial);$('initiallabel').textContent=cash?'Total à vista':'Boleto inicial';$('lineinitial').textContent=money(initial);$('preview').hidden=true};$('p1').onclick=()=>{pkg=1;render()};$('p3').onclick=()=>{pkg=3;render()};$('minus').onclick=()=>{qty=Math.max(1,qty-1);render()};$('plus').onclick=()=>{qty=Math.min(500,qty+1);render()};document.querySelectorAll('input[name=pay]').forEach(el=>el.onchange=render);document.querySelectorAll('[data-package]').forEach(el=>el.addEventListener('click',()=>{pkg=Number(el.dataset.package);render()}));$('continue').onclick=()=>{$('preview').hidden=false;$('preview').textContent='Confira o valor calculado e preencha os dados do comprador abaixo. Nenhum boleto será emitido nesta prévia.';document.getElementById('dados-comprador').scrollIntoView({behavior:'smooth',block:'start'})};const buyer=$('buyer-form');const result=$('buyer-result');buyer.addEventListener('submit',e=>{e.preventDefault();result.hidden=true;const required=[...buyer.querySelectorAll('[required]')];required.forEach(el=>el.removeAttribute('aria-invalid'));const cpf=buyer.elements.cpf.value.replace(/\\D/g,'');const phone=buyer.elements.phone.value.replace(/\\D/g,'');let invalid=required.find(el=>!el.checkValidity());if(!invalid&&cpf.length!==11)invalid=buyer.elements.cpf;if(!invalid&&(phone.length<10||phone.length>11))invalid=buyer.elements.phone;if(invalid){invalid.setAttribute('aria-invalid','true');invalid.focus();result.textContent='Confira os campos obrigatórios e os formatos de CPF, WhatsApp e e-mail.';result.hidden=false;return}const cash=document.querySelector('input[name=pay]:checked').value==='cash';const total=(pkg===3?2000:1000)*qty*(cash?.9:1);const initial=cash?total:100*qty;result.textContent='Prévia validada: '+qty+' pacote(s) de '+pkg+' cobertura(s). Total '+money(total)+'; pagamento inicial '+money(initial)+'. Seus dados não foram enviados. A conexão com o Asaas será feita numa etapa posterior.';result.hidden=false});render()})();
 </script>
 </body></html>
