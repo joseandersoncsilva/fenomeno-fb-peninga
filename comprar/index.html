@@ -102,7 +102,50 @@
 .buyer-consent a{text-decoration:underline;color:#e8cc97}
 .buyer-disclaimer{margin-top:12px}
 @media(max-width:640px){.buyer-grid{grid-template-columns:1fr}}
-#revisao-compra[hidden]{display:none}</style>
+#revisao-compra[hidden]{display:none}
+/* Pré-checkout guiado, sem dependências */
+.checkout-wizard{scroll-margin-top:18px}
+.wizard-top h2{font-size:clamp(24px,5vw,31px);margin:9px 0}
+.wizard-top p{margin:0 0 20px}
+.wizard-progress{margin:12px 0 26px}
+#wizard-count{font-size:12px;color:#d3b57a;font-weight:800}
+.wizard-bars{display:grid;grid-template-columns:repeat(5,1fr);gap:5px;margin-top:9px}
+.wizard-bars i{height:5px;border-radius:20px;background:#424a40}
+.wizard-bars i.active{background:#d3b57a}
+.wizard-panel[hidden],.wizard-navigation button[hidden],.wizard-error[hidden]{display:none}
+.wizard-panel h3{font-size:22px;margin:0 0 18px}
+.wizard-panel .summary{margin-top:20px}
+.wizard-navigation{display:flex;gap:10px;margin-top:22px;align-items:stretch}
+.wizard-navigation .cta{margin:0;flex:1}
+.wizard-back{background:transparent;border:1px solid #687363;border-radius:12px;color:#f5f4ee;font:800 14px system-ui;min-width:91px;padding:0 15px;cursor:pointer}
+.wizard-note{margin-top:12px;line-height:1.5}
+.wizard-error{color:#ffd8c7;background:#39231d;border:1px solid #965f4b;border-radius:8px;padding:10px;margin-top:12px;font-size:13px}
+.buyer-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+.buyer-grid label{display:flex;flex-direction:column;gap:7px;font-size:13px;font-weight:750}
+.buyer-grid input,.buyer-grid select{min-height:45px;width:100%;background:#0c140f;border:1px solid #4d564c;border-radius:10px;color:#fff;padding:9px 12px;font-size:15px}
+.buyer-grid input:focus,.buyer-grid select:focus{outline:2px solid #d3b57a;outline-offset:1px}
+.buyer-consent{display:flex;align-items:flex-start;gap:9px;font-size:13px;color:#ddd;margin-top:18px}
+.buyer-consent input{accent-color:#d3b57a;margin-top:3px}
+.buyer-consent a{color:#e8c98f;text-decoration:underline}
+@media(max-width:600px){.buyer-grid{grid-template-columns:1fr}.wizard-panel .packages{grid-template-columns:1fr}}
+
+/* Cabeçalho reduzido no wizard: preservar o título de contexto apenas na etapa inicial */
+.wizard-progress-caption{display:flex;justify-content:space-between;gap:12px;align-items:center}
+#wizard-step-label{font-size:12px;color:#b6beb1;font-weight:700}
+#pay-balance-row[hidden]{display:none}
+.checkout-wizard:has(.wizard-panel[data-step="1"]:not([hidden])) .wizard-top h2,
+.checkout-wizard:has(.wizard-panel[data-step="2"]:not([hidden])) .wizard-top h2,
+.checkout-wizard:has(.wizard-panel[data-step="3"]:not([hidden])) .wizard-top h2,
+.checkout-wizard:has(.wizard-panel[data-step="4"]:not([hidden])) .wizard-top h2,
+.checkout-wizard:has(.wizard-panel[data-step="1"]:not([hidden])) .wizard-top p,
+.checkout-wizard:has(.wizard-panel[data-step="2"]:not([hidden])) .wizard-top p,
+.checkout-wizard:has(.wizard-panel[data-step="3"]:not([hidden])) .wizard-top p,
+.checkout-wizard:has(.wizard-panel[data-step="4"]:not([hidden])) .wizard-top p{display:none}
+.checkout-wizard:has(.wizard-panel[data-step="1"]:not([hidden])) .wizard-progress,
+.checkout-wizard:has(.wizard-panel[data-step="2"]:not([hidden])) .wizard-progress,
+.checkout-wizard:has(.wizard-panel[data-step="3"]:not([hidden])) .wizard-progress,
+.checkout-wizard:has(.wizard-panel[data-step="4"]:not([hidden])) .wizard-progress{margin-top:12px}
+</style>
 </head>
 <body>
 <main>
@@ -154,67 +197,116 @@
   <div class="opening"><span>ABERTURA OFICIAL</span><strong>16/10 • 06H</strong></div>
   
 </section>
-<section class="section" id="selecionar-pacote" aria-labelledby="pacotetitle">
-<h2 id="pacotetitle">Escolha seu pacote</h2>
-<div class="packages">
-<button type="button" id="p1" class="package" aria-pressed="false"><span class="tag">Individual</span><strong>1 cobertura</strong><span class="hint">R$ 1.000 no parcelado</span></button>
-<button type="button" id="p3" class="package" aria-pressed="true"><span class="tag">Condição especial</span><strong>3 coberturas</strong><span class="hint">R$ 2.000 no parcelado</span></button>
-</div>
-<div style="margin-top:22px"><strong>Quantidade de pacotes</strong><div class="qty" style="margin-top:12px"><button id="minus" type="button" aria-label="Diminuir quantidade">−</button><output id="qty" aria-live="polite">1</output><button id="plus" type="button" aria-label="Aumentar quantidade">+</button></div></div>
-</section>
-<section class="section" aria-labelledby="pagtitle"><h2 id="pagtitle">Forma de pagamento</h2>
-<div class="options">
-<label class="option"><input type="radio" name="pay" value="installments" checked><span><strong>Reserva com boleto inicial</strong><span class="hint">R$ 100 por pacote agora. As demais parcelas serão formalizadas pelo comercial: 10 parcelas totais por pacote individual ou 20 por pacote de 3 coberturas.</span></span></label>
-<label class="option"><input type="radio" name="pay" value="cash"><span><strong>À vista — 10% de desconto</strong><span class="hint">Pagamento integral em boleto, com desconto aplicado ao total.</span></span></label>
-</div>
-<div class="summary" aria-live="polite">
-<div class="line"><span>Pacotes selecionados</span><strong id="linepkg">1 × 3 coberturas</strong></div>
-<div class="line"><span>Total de coberturas</span><strong id="linecovers">3</strong></div>
-<div class="line"><span>Valor da contratação</span><strong id="linetotal">R$ 2.000,00</strong></div>
-<div class="line"><span id="discountlabel">Saldo após o pagamento inicial</span><strong id="linedue">R$ 1.900,00</strong></div>
-<div class="line final"><span id="initiallabel">Boleto inicial</span><strong id="lineinitial">R$ 100,00</strong></div>
-</div>
-<p class="notice">A reserva depende de pagamento confirmado. Após a confirmação, a equipe comercial entrará em contato para formalização do contrato e das parcelas restantes, quando aplicável.</p>
-<button class="cta" type="button" id="continue">CONTINUAR PARA MEUS DADOS</button>
-<div id="preview" class="preview" role="status" hidden>Versão de prévia: nenhuma cobrança é emitida aqui. A confirmação e o cadastro do comprador serão ativados depois da conexão segura com o Asaas.</div>
-</section>
-<section class="section buyer-section" id="dados-comprador" aria-labelledby="buyer-title">
-<h2 id="buyer-title">Dados do comprador</h2>
-<p class="hint buyer-intro">Preencha seus dados para revisar a contratação. Nesta demonstração os dados não serão enviados nem armazenados.</p>
-<form id="buyer-form" novalidate>
-<div class="buyer-grid">
-<label>Nome completo<input name="fullName" autocomplete="name" maxlength="120" required placeholder="Seu nome completo"></label>
-<label>CPF<input name="cpf" inputmode="numeric" autocomplete="off" maxlength="14" required placeholder="000.000.000-00"></label>
-<label>WhatsApp com DDD<input name="phone" type="tel" inputmode="tel" autocomplete="tel" maxlength="16" required placeholder="(73) 99999-9999"></label>
-<label>E-mail<input name="email" type="email" autocomplete="email" maxlength="160" required placeholder="voce@exemplo.com"></label>
-<label>Cidade<input name="city" autocomplete="address-level2" maxlength="90" required placeholder="Sua cidade"></label>
-<label>Estado<select name="state" required><option value="">Selecione o estado</option><option>AC</option><option>AL</option><option>AP</option><option>AM</option><option>BA</option><option>CE</option><option>DF</option><option>ES</option><option>GO</option><option>MA</option><option>MT</option><option>MS</option><option>MG</option><option>PA</option><option>PB</option><option>PR</option><option>PE</option><option>PI</option><option>RJ</option><option>RN</option><option>RS</option><option>RO</option><option>RR</option><option>SC</option><option>SP</option><option>SE</option><option>TO</option></select></label>
-</div>
-<label class="buyer-consent"><input name="privacy" type="checkbox" required><span>Li e concordo com a <a href="/privacidade.html" target="_blank" rel="noopener noreferrer">Política de Privacidade</a> e autorizo o uso dos dados para contato e formalização da compra.</span></label>
-<button class="cta" type="submit">REVISAR MINHA COMPRA</button>
-<p class="hint buyer-disclaimer">Ainda não há emissão de boleto ou confirmação automática de reserva nesta versão.</p>
-<div id="buyer-result" class="preview" role="status" aria-live="polite" hidden></div>
-</form>
-</section>
-<section class="section buyer-section" id="revisao-compra" aria-labelledby="review-title" hidden>
-<h2 id="review-title">Revise sua compra</h2>
-<p class="hint buyer-intro">Confira os detalhes antes de avançar. Esta é uma demonstração: nenhuma cobrança será emitida.</p>
-<div class="summary" aria-live="polite">
-<div class="line"><span>Comprador</span><strong id="review-name"></strong></div>
-<div class="line"><span>Pacotes</span><strong id="review-package"></strong></div>
-<div class="line"><span>Quantidade de coberturas</span><strong id="review-covers"></strong></div>
-<div class="line"><span>Forma de pagamento</span><strong id="review-method"></strong></div>
-<div class="line"><span>Valor total</span><strong id="review-total"></strong></div>
-<div class="line"><span>Saldo após entrada</span><strong id="review-balance"></strong></div>
-<div class="line final"><span id="review-initial-label">Pagamento inicial</span><strong id="review-initial"></strong></div>
-</div>
-<button class="cta" type="button" disabled aria-disabled="true" style="opacity:.65;cursor:not-allowed">GERAR MEU BOLETO — EM BREVE</button>
-<p class="hint buyer-disclaimer">Etapa de demonstração. A geração do boleto ficará disponível após a integração do Asaas. Nenhuma reserva foi realizada.</p>
-<button type="button" id="edit-review" class="offer-cta secondary" style="margin-top:12px;width:100%;cursor:pointer">Voltar e editar dados</button>
+<section class="section checkout-wizard" id="selecionar-pacote" aria-labelledby="wizard-title">
+ <div class="wizard-top"><div class="tag">AQUISIÇÃO DE COBERTURAS</div><h2 id="wizard-title">Seu pedido, passo a passo</h2><p class="hint">Escolha sua condição e avance no seu ritmo. Você poderá voltar sem perder suas escolhas.</p></div>
+ <div class="wizard-progress"><div class="wizard-progress-caption"><span id="wizard-count">Etapa 1 de 5</span><span id="wizard-step-label">Pacote</span></div><div class="wizard-bars" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></div></div>
+ <div class="wizard-panel" data-step="0">
+  <h3>Qual pacote deseja adquirir?</h3>
+  <div class="packages">
+   <button type="button" class="package wizard-package" data-choice="1" aria-pressed="false"><span class="tag">INDIVIDUAL</span><strong>1 COBERTURA</strong><span class="hint">R$ 1.000 por pacote</span></button>
+   <button type="button" class="package wizard-package" data-choice="3" aria-pressed="true"><span class="tag">CONDIÇÃO ESPECIAL</span><strong>3 COBERTURAS</strong><span class="hint">R$ 2.000 por pacote</span></button>
+  </div>
+ </div>
+ <div class="wizard-panel" data-step="1" hidden>
+  <h3>Quantos pacotes deseja?</h3>
+  <div class="qty"><button type="button" id="minus" aria-label="Diminuir quantidade">−</button><output id="qty">1</output><button type="button" id="plus" aria-label="Aumentar quantidade">+</button></div>
+  <div class="summary"><div class="line"><span>Total de coberturas</span><strong id="qty-covers">3</strong></div><div class="line"><span>Valor sem desconto</span><strong id="qty-total">R$ 2.000,00</strong></div></div>
+ </div>
+ <div class="wizard-panel" data-step="2" hidden>
+  <h3>Como deseja pagar?</h3>
+  <div class="options">
+   <label class="option"><input type="radio" name="pay" value="installments" checked><span><strong>Entrada em boleto</strong><span class="hint">R$ 100 por pacote agora. O comercial formalizará as parcelas posteriores.</span></span></label>
+   <label class="option"><input type="radio" name="pay" value="cash"><span><strong>Pagamento integral à vista</strong><span class="hint">10% de desconto no valor total da contratação.</span></span></label>
+  </div>
+  <div class="summary"><div class="line"><span>Valor da contratação</span><strong id="pay-total">R$ 2.000,00</strong></div><div class="line" id="pay-balance-row"><span>Saldo restante</span><strong id="pay-balance">R$ 1.900,00</strong></div><div class="line final"><span id="pay-initial-label">Entrada</span><strong id="pay-initial">R$ 100,00</strong></div></div>
+ </div>
+ <div class="wizard-panel" data-step="3" hidden>
+  <h3>Seus dados</h3>
+  <p class="hint">Dados necessários para a futura emissão do boleto e formalização comercial. Nesta demonstração, nada é enviado ou armazenado.</p>
+  <form id="buyer-form" novalidate>
+   <div class="buyer-grid">
+    <label>Nome completo<input name="fullName" autocomplete="name" maxlength="120" required placeholder="Seu nome completo"></label>
+    <label>CPF<input name="cpf" inputmode="numeric" maxlength="14" required placeholder="000.000.000-00"></label>
+    <label>WhatsApp com DDD<input name="phone" type="tel" inputmode="tel" maxlength="16" required placeholder="(73) 99999-9999"></label>
+    <label>E-mail<input name="email" type="email" autocomplete="email" maxlength="160" required placeholder="voce@exemplo.com"></label>
+    <label>Cidade<input name="city" autocomplete="address-level2" maxlength="90" required placeholder="Sua cidade"></label>
+    <label>Estado<select name="state" required><option value="">Selecione o estado</option><option value="AC">AC</option><option value="AL">AL</option><option value="AP">AP</option><option value="AM">AM</option><option value="BA">BA</option><option value="CE">CE</option><option value="DF">DF</option><option value="ES">ES</option><option value="GO">GO</option><option value="MA">MA</option><option value="MT">MT</option><option value="MS">MS</option><option value="MG">MG</option><option value="PA">PA</option><option value="PB">PB</option><option value="PR">PR</option><option value="PE">PE</option><option value="PI">PI</option><option value="RJ">RJ</option><option value="RN">RN</option><option value="RS">RS</option><option value="RO">RO</option><option value="RR">RR</option><option value="SC">SC</option><option value="SP">SP</option><option value="SE">SE</option><option value="TO">TO</option></select></label>
+   </div>
+   <label class="buyer-consent"><input name="privacy" type="checkbox" required><span>Li e concordo com a <a href="/privacidade.html" target="_blank" rel="noopener noreferrer">Política de Privacidade</a> e autorizo o uso dos dados para contato e formalização da compra.</span></label>
+   <p id="wizard-error" class="wizard-error" role="alert" hidden></p>
+  </form>
+ </div>
+ <div class="wizard-panel" data-step="4" hidden>
+  <h3>Revise sua compra</h3>
+  <div class="summary">
+   <div class="line"><span>Comprador</span><strong id="review-name"></strong></div>
+   <div class="line"><span>Pacotes</span><strong id="review-package"></strong></div>
+   <div class="line"><span>Total de coberturas</span><strong id="review-covers"></strong></div>
+   <div class="line"><span>Forma de pagamento</span><strong id="review-method"></strong></div>
+   <div class="line"><span>Valor da contratação</span><strong id="review-total"></strong></div>
+   <div class="line"><span>Saldo após pagamento inicial</span><strong id="review-balance"></strong></div>
+   <div class="line final"><span id="review-initial-label">Entrada</span><strong id="review-initial"></strong></div>
+  </div>
+  <button class="cta" type="button" disabled aria-disabled="true">GERAR MEU BOLETO — EM BREVE</button>
+  <p class="hint wizard-note">Demonstração: nenhum boleto será gerado e nenhuma reserva será confirmada antes da integração com o Asaas.</p>
+ </div>
+ <div class="wizard-navigation"><button type="button" id="wizard-back" class="wizard-back" hidden>Voltar</button><button type="button" id="wizard-next" class="cta">CONTINUAR</button></div>
 </section>
 <footer class="foot">Família Barak do Kelner · Fenômeno FB Peninga</footer>
 </main>
 <script>
-(()=>{let pkg=3,qty=1;const $=id=>document.getElementById(id);const money=n=>n.toLocaleString('pt-BR',{style:'currency',currency:'BRL'});const render=()=>{const cash=document.querySelector('input[name=pay]:checked').value==='cash';const full=(pkg===3?2000:1000)*qty;const total=cash?full*.9:full;const initial=cash?total:100*qty;$('p1').setAttribute('aria-pressed',String(pkg===1));$('p3').setAttribute('aria-pressed',String(pkg===3));$('qty').textContent=qty;$('linepkg').textContent=qty+' × '+pkg+(pkg===1?' cobertura':' coberturas');$('linecovers').textContent=pkg*qty;$('linetotal').textContent=money(total);$('discountlabel').textContent=cash?'Desconto aplicado':'Saldo após o pagamento inicial';$('linedue').textContent=cash?money(full-total):money(total-initial);$('initiallabel').textContent=cash?'Total à vista':'Boleto inicial';$('lineinitial').textContent=money(initial);$('preview').hidden=true};$('p1').onclick=()=>{pkg=1;render()};$('p3').onclick=()=>{pkg=3;render()};$('minus').onclick=()=>{qty=Math.max(1,qty-1);render()};$('plus').onclick=()=>{qty=Math.min(500,qty+1);render()};document.querySelectorAll('input[name=pay]').forEach(el=>el.onchange=render);document.querySelectorAll('[data-package]').forEach(el=>el.addEventListener('click',()=>{pkg=Number(el.dataset.package);render()}));$('continue').onclick=()=>{document.getElementById('dados-comprador').scrollIntoView({behavior:'smooth',block:'start'})};const buyer=$('buyer-form');const result=$('buyer-result');buyer.addEventListener('submit',e=>{e.preventDefault();result.hidden=true;const required=[...buyer.querySelectorAll('[required]')];required.forEach(el=>el.removeAttribute('aria-invalid'));const cpf=buyer.elements.cpf.value.replace(/\D/g,'');const phone=buyer.elements.phone.value.replace(/\D/g,'');let invalid=required.find(el=>!el.checkValidity());if(!invalid&&cpf.length!==11)invalid=buyer.elements.cpf;if(!invalid&&(phone.length<10||phone.length>11))invalid=buyer.elements.phone;if(invalid){invalid.setAttribute('aria-invalid','true');invalid.focus();result.textContent='Confira os campos obrigatórios e os formatos de CPF, WhatsApp e e-mail.';result.hidden=false;return}const cash=document.querySelector('input[name=pay]:checked').value==='cash';const total=(pkg===3?2000:1000)*qty*(cash?.9:1);const initial=cash?total:100*qty;$('review-name').textContent=buyer.elements.fullName.value.trim();$('review-package').textContent=qty+' × '+pkg+(pkg===1?' cobertura':' coberturas');$('review-covers').textContent=String(qty*pkg);$('review-method').textContent=cash?'À vista — 10% de desconto':'Boleto inicial + parcelas com o comercial';$('review-total').textContent=money(total);$('review-balance').textContent=money(total-initial);$('review-initial-label').textContent=cash?'Total à vista':'Pagamento inicial';$('review-initial').textContent=money(initial);$('revisao-compra').hidden=false;$('revisao-compra').scrollIntoView({behavior:'smooth',block:'start'})});$('edit-review').onclick=()=>{buyer.scrollIntoView({behavior:'smooth',block:'start'});buyer.elements.fullName.focus()};render()})();
+(()=>{"use strict";
+let pkg=3,qty=1,step=0;
+const $=id=>document.getElementById(id);
+const panels=[...document.querySelectorAll('.wizard-panel')];
+const bars=[...document.querySelectorAll('.wizard-bars i')];
+const buyer=$('buyer-form'),next=$('wizard-next'),back=$('wizard-back');
+const money=n=>n.toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
+const cash=()=>document.querySelector('input[name="pay"]:checked').value==='cash';
+const full=()=>qty*(pkg===3?2000:1000);
+const total=()=>cash()?full()*.9:full();
+const initial=()=>cash()?total():qty*100;
+const cpfValid=v=>{const d=v.replace(/\D/g,'');if(d.length!==11||/^(\d)\1+$/.test(d))return false;for(let len=9;len<=10;len++){let sum=0;for(let i=0;i<len;i++)sum+=Number(d[i])*(len+1-i);let check=(sum*10)%11;if(check===10)check=0;if(check!==Number(d[len]))return false;}return true;};
+function render(){
+ document.querySelectorAll('.wizard-package').forEach(b=>b.setAttribute('aria-pressed',String(Number(b.dataset.choice)===pkg)));
+ $('qty').textContent=qty;$('qty-covers').textContent=pkg*qty;$('qty-total').textContent=money(full());
+ $('pay-total').textContent=money(total());$('pay-initial').textContent=money(initial());$('pay-initial-label').textContent=cash()?'Total à vista':'Entrada';$('pay-balance').textContent=money(total()-initial());$('pay-balance-row').hidden=cash();
+ panels.forEach((p,i)=>p.hidden=i!==step);
+ bars.forEach((bar,i)=>bar.classList.toggle('active',i<=step));
+ $('wizard-count').textContent='Etapa '+(step+1)+' de 5';$('wizard-step-label').textContent=['Pacote','Quantidade','Pagamento','Dados','Revisão'][step];
+ back.hidden=step===0;next.hidden=step===4;
+ next.textContent=step===3?'REVISAR MINHA COMPRA':'CONTINUAR';
+}
+function review(){
+ $('review-name').textContent=buyer.elements.fullName.value.trim();
+ $('review-package').textContent=qty+' × '+pkg+(pkg===1?' cobertura':' coberturas');
+ $('review-covers').textContent=qty*pkg;
+ $('review-method').textContent=cash()?'À vista com 10% de desconto':'Entrada em boleto';
+ $('review-total').textContent=money(total());
+ $('review-balance').textContent=money(total()-initial());
+ $('review-initial-label').textContent=cash()?'Total à vista':'Entrada';
+ $('review-initial').textContent=money(initial());
+}
+function validateBuyer(){
+ const err=$('wizard-error');err.hidden=true;
+ let invalid=[...buyer.querySelectorAll('[required]')].find(el=>!el.checkValidity());
+ if(!invalid&&!cpfValid(buyer.elements.cpf.value))invalid=buyer.elements.cpf;
+ const digits=buyer.elements.phone.value.replace(/\D/g,'');
+ if(!invalid&&(digits.length<10||digits.length>11))invalid=buyer.elements.phone;
+ if(invalid){err.textContent='Verifique os dados obrigatórios, CPF, WhatsApp, e-mail e aceite da política.';err.hidden=false;invalid.focus();return false;}
+ return true;
+}
+function go(n){step=Math.max(0,Math.min(4,n));if(step===4)review();render();$('selecionar-pacote').scrollIntoView({behavior:'smooth',block:'start'});}
+document.querySelectorAll('.wizard-package').forEach(b=>b.addEventListener('click',()=>{pkg=Number(b.dataset.choice);render()}));
+$('minus').addEventListener('click',()=>{qty=Math.max(1,qty-1);render()});
+$('plus').addEventListener('click',()=>{qty=Math.min(500,qty+1);render()});
+document.querySelectorAll('input[name="pay"]').forEach(e=>e.addEventListener('change',render));
+next.addEventListener('click',()=>{if(step===3&&!validateBuyer())return;go(step+1)});
+back.addEventListener('click',()=>go(step-1));
+buyer.addEventListener('submit',e=>{e.preventDefault();if(validateBuyer())go(4)});
+document.querySelectorAll('.offer-cta[data-package]').forEach(a=>a.addEventListener('click',()=>{pkg=Number(a.dataset.package);step=1;render()}));
+buyer.elements.cpf.addEventListener('input',e=>{const d=e.target.value.replace(/\D/g,'').slice(0,11);e.target.value=d.replace(/^(\d{3})(\d)/,'$1.$2').replace(/^(\d{3})\.(\d{3})(\d)/,'$1.$2.$3').replace(/\.(\d{3})(\d{1,2})$/,'.$1-$2')});
+render();
+})();
 </script>
 </body></html>
