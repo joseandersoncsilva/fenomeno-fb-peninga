@@ -128,6 +128,23 @@
 .buyer-consent input{accent-color:#d3b57a;margin-top:3px}
 .buyer-consent a{color:#e8c98f;text-decoration:underline}
 @media(max-width:600px){.buyer-grid{grid-template-columns:1fr}.wizard-panel .packages{grid-template-columns:1fr}}
+
+/* Cabeçalho reduzido no wizard: preservar o título de contexto apenas na etapa inicial */
+.wizard-progress-caption{display:flex;justify-content:space-between;gap:12px;align-items:center}
+#wizard-step-label{font-size:12px;color:#b6beb1;font-weight:700}
+#pay-balance-row[hidden]{display:none}
+.checkout-wizard:has(.wizard-panel[data-step="1"]:not([hidden])) .wizard-top h2,
+.checkout-wizard:has(.wizard-panel[data-step="2"]:not([hidden])) .wizard-top h2,
+.checkout-wizard:has(.wizard-panel[data-step="3"]:not([hidden])) .wizard-top h2,
+.checkout-wizard:has(.wizard-panel[data-step="4"]:not([hidden])) .wizard-top h2,
+.checkout-wizard:has(.wizard-panel[data-step="1"]:not([hidden])) .wizard-top p,
+.checkout-wizard:has(.wizard-panel[data-step="2"]:not([hidden])) .wizard-top p,
+.checkout-wizard:has(.wizard-panel[data-step="3"]:not([hidden])) .wizard-top p,
+.checkout-wizard:has(.wizard-panel[data-step="4"]:not([hidden])) .wizard-top p{display:none}
+.checkout-wizard:has(.wizard-panel[data-step="1"]:not([hidden])) .wizard-progress,
+.checkout-wizard:has(.wizard-panel[data-step="2"]:not([hidden])) .wizard-progress,
+.checkout-wizard:has(.wizard-panel[data-step="3"]:not([hidden])) .wizard-progress,
+.checkout-wizard:has(.wizard-panel[data-step="4"]:not([hidden])) .wizard-progress{margin-top:12px}
 </style>
 </head>
 <body>
@@ -181,8 +198,8 @@
   
 </section>
 <section class="section checkout-wizard" id="selecionar-pacote" aria-labelledby="wizard-title">
- <div class="wizard-top"><div class="tag">AQUISIÇÃO DE COBERTURAS</div><h2 id="wizard-title">Sua aquisição, passo a passo</h2><p class="hint">Escolha sua condição e avance no seu ritmo. Você poderá voltar sem perder suas escolhas.</p></div>
- <div class="wizard-progress"><span id="wizard-count">Etapa 1 de 5</span><div class="wizard-bars" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></div></div>
+ <div class="wizard-top"><div class="tag">AQUISIÇÃO DE COBERTURAS</div><h2 id="wizard-title">Seu pedido, passo a passo</h2><p class="hint">Escolha sua condição e avance no seu ritmo. Você poderá voltar sem perder suas escolhas.</p></div>
+ <div class="wizard-progress"><div class="wizard-progress-caption"><span id="wizard-count">Etapa 1 de 5</span><span id="wizard-step-label">Pacote</span></div><div class="wizard-bars" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></div></div>
  <div class="wizard-panel" data-step="0">
   <h3>Qual pacote deseja adquirir?</h3>
   <div class="packages">
@@ -201,7 +218,7 @@
    <label class="option"><input type="radio" name="pay" value="installments" checked><span><strong>Entrada em boleto</strong><span class="hint">R$ 100 por pacote agora. O comercial formalizará as parcelas posteriores.</span></span></label>
    <label class="option"><input type="radio" name="pay" value="cash"><span><strong>Pagamento integral à vista</strong><span class="hint">10% de desconto no valor total da contratação.</span></span></label>
   </div>
-  <div class="summary"><div class="line"><span>Valor da contratação</span><strong id="pay-total">R$ 2.000,00</strong></div><div class="line final"><span id="pay-initial-label">Pagamento inicial</span><strong id="pay-initial">R$ 100,00</strong></div></div>
+  <div class="summary"><div class="line"><span>Valor da contratação</span><strong id="pay-total">R$ 2.000,00</strong></div><div class="line" id="pay-balance-row"><span>Saldo restante</span><strong id="pay-balance">R$ 1.900,00</strong></div><div class="line final"><span id="pay-initial-label">Entrada</span><strong id="pay-initial">R$ 100,00</strong></div></div>
  </div>
  <div class="wizard-panel" data-step="3" hidden>
   <h3>Seus dados</h3>
@@ -228,7 +245,7 @@
    <div class="line"><span>Forma de pagamento</span><strong id="review-method"></strong></div>
    <div class="line"><span>Valor da contratação</span><strong id="review-total"></strong></div>
    <div class="line"><span>Saldo após pagamento inicial</span><strong id="review-balance"></strong></div>
-   <div class="line final"><span id="review-initial-label">Pagamento inicial</span><strong id="review-initial"></strong></div>
+   <div class="line final"><span id="review-initial-label">Entrada</span><strong id="review-initial"></strong></div>
   </div>
   <button class="cta" type="button" disabled aria-disabled="true">GERAR MEU BOLETO — EM BREVE</button>
   <p class="hint wizard-note">Demonstração: nenhum boleto será gerado e nenhuma reserva será confirmada antes da integração com o Asaas.</p>
@@ -253,10 +270,10 @@ const cpfValid=v=>{const d=v.replace(/\D/g,'');if(d.length!==11||/^(\d)\1+$/.tes
 function render(){
  document.querySelectorAll('.wizard-package').forEach(b=>b.setAttribute('aria-pressed',String(Number(b.dataset.choice)===pkg)));
  $('qty').textContent=qty;$('qty-covers').textContent=pkg*qty;$('qty-total').textContent=money(full());
- $('pay-total').textContent=money(total());$('pay-initial').textContent=money(initial());$('pay-initial-label').textContent=cash()?'Total à vista':'Pagamento inicial';
+ $('pay-total').textContent=money(total());$('pay-initial').textContent=money(initial());$('pay-initial-label').textContent=cash()?'Total à vista':'Entrada';$('pay-balance').textContent=money(total()-initial());$('pay-balance-row').hidden=cash();
  panels.forEach((p,i)=>p.hidden=i!==step);
  bars.forEach((bar,i)=>bar.classList.toggle('active',i<=step));
- $('wizard-count').textContent='Etapa '+(step+1)+' de 5';
+ $('wizard-count').textContent='Etapa '+(step+1)+' de 5';$('wizard-step-label').textContent=['Pacote','Quantidade','Pagamento','Dados','Revisão'][step];
  back.hidden=step===0;next.hidden=step===4;
  next.textContent=step===3?'REVISAR MINHA COMPRA':'CONTINUAR';
 }
@@ -267,7 +284,7 @@ function review(){
  $('review-method').textContent=cash()?'À vista com 10% de desconto':'Entrada em boleto';
  $('review-total').textContent=money(total());
  $('review-balance').textContent=money(total()-initial());
- $('review-initial-label').textContent=cash()?'Total à vista':'Pagamento inicial';
+ $('review-initial-label').textContent=cash()?'Total à vista':'Entrada';
  $('review-initial').textContent=money(initial());
 }
 function validateBuyer(){
