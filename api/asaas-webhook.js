@@ -24,8 +24,8 @@ export default async function handler(req,res) {
    const local=await db('payments?asaas_payment_id=eq.'+encodeURIComponent(paymentId)+'&select=id,order_id,amount_cents');
    if(local.length!==1) {
       // Stored for later reconciliation (webhook may arrive before local payment insert).
-      console.warn('Webhook event stored; local payment not yet found',event.event);
-      return res.status(200).json({received:true,queued:true});
+      console.warn('Webhook waiting for matching local payment',event.event);
+      return res.status(503).json({error:'Payment not yet registered; retry delivery'});
    }
    const response=await fetch('https://api-sandbox.asaas.com/v3/payments/'+encodeURIComponent(paymentId),{
      headers:{access_token:process.env.ASAAS_SANDBOX_API_KEY,'User-Agent':'FBPeningaCheckout/0.1 (sandbox)'}
