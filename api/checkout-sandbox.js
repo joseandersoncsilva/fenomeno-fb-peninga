@@ -1,5 +1,6 @@
 import { createHash } from 'node:crypto';
 import { db } from './_lib/db.js';
+import { issueStatusAccess } from './_lib/status-access.js';
 import { asaas, invoiceURL, safeEquals, sandboxReady } from './_lib/sandbox.js';
 
 const digits = v => String(v || '').replace(/\D/g, '');
@@ -43,7 +44,7 @@ export default async function handler(req,res) {
     if(reservation.conflict)return res.status(409).json({error:'A tentativa já existe com dados diferentes.'});
     if(!reservation.claimed) {
       if(reservation.request.status==='completed'&&reservation.request.response)
-        return res.status(200).json({...reservation.request.response,replayed:true});
+        return res.status(200).json({...reservation.request.response,statusAccess:issueStatusAccess(reservation.request.response.reference),replayed:true});
       return res.status(409).json({error:'Pedido em processamento ou conciliação. Não inicie outra compra.',code:'CHECKOUT_IN_PROGRESS'});
     }
     const {customer,order}=reservation;
@@ -76,7 +77,7 @@ export default async function handler(req,res) {
       environment:'sandbox',orderStatus:result.orderStatus,notice:'Teste sem movimentação real'};
     await db('checkout_requests?idempotency_key=eq.'+encodeURIComponent(key),{method:'PATCH',body:{
       status:'completed',response,updated_at:new Date().toISOString()},prefer:'return=minimal'});
-    return res.status(201).json(response);
+    return res.status(201).json({...response,statusAccess:issueStatusAccess(order.public_reference)});
   } catch {
     // A remote success followed by a persistence failure must never create another charge.
     console.error('Checkout Sandbox requires reconciliation');
