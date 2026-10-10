@@ -6,7 +6,16 @@ const digits=v=>String(v||'').replace(/\D/g,'');
 function cpfValid(value){const d=digits(value);if(d.length!==11||/^(\d)\1+$/.test(d))return false;for(let len=9;len<=10;len++){let sum=0;for(let i=0;i<len;i++)sum+=Number(d[i])*(len+1-i);let check=sum*10%11;if(check===10)check=0;if(check!==Number(d[len]))return false;}return true;}
 async function asaas(path,body){
  const result=await fetch('https://api-sandbox.asaas.com/v3'+path,{method:'POST',headers:{'Content-Type':'application/json','User-Agent':'FBPeningaCheckout/0.1 (sandbox)','access_token':process.env.ASAAS_SANDBOX_API_KEY},body:JSON.stringify(body)});
- if(!result.ok)throw new Error('Asaas sandbox error '+result.status);
+ if(!result.ok){
+   let codes=[];
+   try {
+     const payload=await result.json();
+     codes=Array.isArray(payload?.errors)?payload.errors.map(e=>String(e.code||'unknown').slice(0,48)).slice(0,5):[];
+   }catch{}
+   // Do not log CPF, customer details, access tokens or Asaas raw error descriptions.
+   console.error('Asaas sandbox validation',JSON.stringify({endpoint:path,httpStatus:result.status,errorCodes:codes}));
+   throw new Error('Asaas sandbox error '+result.status);
+ }
  return result.json();
 }
 export default async function handler(req,res){
