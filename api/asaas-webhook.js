@@ -10,7 +10,14 @@ export default async function handler(req,res) {
  res.setHeader('Cache-Control','no-store');
  if(req.method!=='POST') return res.status(405).json({error:'Method not allowed'});
  const token=process.env.ASAAS_WEBHOOK_TOKEN;
- if(!token||!equals(req.headers['asaas-access-token'],token)) return res.status(401).json({error:'Unauthorized'});
+ if(!token) {
+   console.error('Asaas webhook: expected token missing in deployment environment');
+   return res.status(503).json({error:'Webhook not configured'});
+ }
+ if(!equals(req.headers['asaas-access-token'],token)) {
+   console.warn('Asaas webhook: invalid or missing authentication header');
+   return res.status(401).json({error:'Unauthorized'});
+ }
  const event=req.body;
  if(!event||typeof event.id!=='string'||typeof event.event!=='string'||typeof event.payment?.id!=='string')
    return res.status(400).json({error:'Invalid event'});
