@@ -23,7 +23,9 @@ export async function asaas(path, { method = 'GET', body } = {}) {
   });
   if (!response.ok) {
     // Never log remote descriptions: they can contain personal data or credentials.
-    throw new Error('Asaas HTTP ' + response.status);
+    const error=new Error('Asaas HTTP ' + response.status);
+    error.httpStatus=response.status;
+    throw error;
   }
   if(response.status===204)return null;
   return response.json();

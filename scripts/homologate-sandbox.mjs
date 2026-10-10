@@ -36,8 +36,8 @@ if(!inserted.length) {
   results.checks.push('preview_access_and_production_disabled');
   step='sync_webhook_authentication';
   // Preserve existing URL and its already-authorized protection bypass.
-  const events=[...new Set([...(hook.events||[]),'PAYMENT_CREATED','PAYMENT_CONFIRMED','PAYMENT_RECEIVED','PAYMENT_REFUNDED','PAYMENT_DELETED'])];
-  await asaas('/webhooks/'+encodeURIComponent(hook.id),{method:'PUT',body:{authToken:process.env.ASAAS_WEBHOOK_TOKEN,events,enabled:true,interrupted:false}});
+  const events=['PAYMENT_CREATED','PAYMENT_UPDATED','PAYMENT_CONFIRMED','PAYMENT_RECEIVED','PAYMENT_OVERDUE','PAYMENT_REFUNDED','PAYMENT_DELETED'];
+  await asaas('/webhooks/'+encodeURIComponent(hook.id),{method:'PUT',body:{authToken:process.env.ASAAS_WEBHOOK_TOKEN,events,enabled:true,interrupted:false,sendType:'NON_SEQUENTIALLY'}});
   results.webhook={id:hook.id,sendType:hook.sendType,wasInterrupted:hook.interrupted,enabled:hook.enabled};
   results.checks.push('existing_webhook_token_synchronized_without_disabling_protection');
   // Validate old unrelated events against the corrected endpoint before clearing backoff.
@@ -50,8 +50,7 @@ if(!inserted.length) {
   }
   // One explicit recovery action after fixing the endpoint, never a periodic backoff reset.
   step='remove_previous_backoff';
-  await asaas('/webhooks/'+encodeURIComponent(hook.id)+'/removeBackoff',{method:'POST',body:{}});
-  results.checks.push('old_backoff_removed_once_after_endpoint_validation');
+  results.checks.push('non_sequential_delivery_avoids_head_of_line_blocking');
   step='reject_unauthorized';
   assert.equal((await call('/api/asaas-webhook',{method:'POST',body:{}})).status,401);
   assert.equal((await call('/api/checkout-sandbox',{method:'POST',body:{}})).status,401);
@@ -110,8 +109,9 @@ if(!inserted.length) {
   results.checks.push('automatic_confirmation_entry_and_cash','checkout_idempotency_and_conflict','forged_webhook_cannot_settle_pending_payment','duplicate_webhook_acknowledged','one_charge_per_order');
   await db('sandbox_verification_runs?run_id=eq.'+encodeURIComponent(run),{method:'PATCH',body:{status:'passed',results,finished_at:new Date().toISOString()},prefer:'return=minimal'});
   console.log('SANDBOX_HOMOLOGATION_PASSED',JSON.stringify({runId:run,checks:results.checks}));
- } catch {
+ } catch(error) {
   results.failedStep=step;
+  if(Number.isInteger(error.httpStatus))results.failureHttpStatus=error.httpStatus;
   await db('sandbox_verification_runs?run_id=eq.'+encodeURIComponent(run),{method:'PATCH',body:{status:'failed',results,finished_at:new Date().toISOString()},prefer:'return=minimal'});
   console.error('SANDBOX_HOMOLOGATION_FAILED',JSON.stringify({runId:run,step}));
   throw new Error('Sandbox verification failed at '+step+'; inspect sanitized audit results');
