@@ -247,7 +247,10 @@
    <div class="line"><span>Saldo após pagamento inicial</span><strong id="review-balance"></strong></div>
    <div class="line final"><span id="review-initial-label">Entrada</span><strong id="review-initial"></strong></div>
   </div>
-  <button class="cta" type="button" disabled aria-disabled="true">GERAR MEU BOLETO — EM BREVE</button>
+  <div id="sandbox-access" hidden><p class="hint">TESTE SANDBOX — use somente dados fictícios. Pagamentos reais estão desativados.</p><label>Token de homologação<input id="sandbox-token" type="password" autocomplete="off" spellcheck="false"></label></div>
+  <button id="generate-boleto" class="cta" type="button" disabled aria-disabled="true">GERAR MEU BOLETO — EM BREVE</button>
+  <p id="checkout-result" role="status"></p><a id="invoice-link" class="cta" target="_blank" rel="noopener noreferrer" hidden>ABRIR BOLETO SANDBOX</a>
+  <button id="check-payment" type="button" hidden>Verificar confirmação automática</button>
   <p class="hint wizard-note">Demonstração: nenhum boleto será gerado e nenhuma reserva será confirmada antes da integração com o Asaas.</p>
  </div>
  <div class="wizard-navigation"><button type="button" id="wizard-back" class="wizard-back" hidden>Voltar</button><button type="button" id="wizard-next" class="cta">CONTINUAR</button></div>
@@ -299,13 +302,53 @@ function validateBuyer(){
 function go(n){step=Math.max(0,Math.min(4,n));if(step===4)review();render();$('selecionar-pacote').scrollIntoView({behavior:'smooth',block:'start'});}
 document.querySelectorAll('.wizard-package').forEach(b=>b.addEventListener('click',()=>{pkg=Number(b.dataset.choice);render()}));
 $('minus').addEventListener('click',()=>{qty=Math.max(1,qty-1);render()});
-$('plus').addEventListener('click',()=>{qty=Math.min(500,qty+1);render()});
+$('plus').addEventListener('click',()=>{qty=Math.min(100,qty+1);render()});
 document.querySelectorAll('input[name="pay"]').forEach(e=>e.addEventListener('change',render));
 next.addEventListener('click',()=>{if(step===3&&!validateBuyer())return;go(step+1)});
 back.addEventListener('click',()=>go(step-1));
 buyer.addEventListener('submit',e=>{e.preventDefault();if(validateBuyer())go(4)});
 document.querySelectorAll('.offer-cta[data-package]').forEach(a=>a.addEventListener('click',()=>{pkg=Number(a.dataset.package);step=1;render()}));
 buyer.elements.cpf.addEventListener('input',e=>{const d=e.target.value.replace(/\D/g,'').slice(0,11);e.target.value=d.replace(/^(\d{3})(\d)/,'$1.$2').replace(/^(\d{3})\.(\d{3})(\d)/,'$1.$2.$3').replace(/\.(\d{3})(\d{1,2})$/,'.$1-$2')});
+let sandboxEnabled=false,submitting=false,reference=null,attemptKey=sessionStorage.getItem('fbp-attempt-key')||crypto.randomUUID();
+let previousDigest=sessionStorage.getItem('fbp-attempt-digest');
+const generate=$('generate-boleto'),result=$('checkout-result'),token=$('sandbox-token');
+fetch('/api/checkout-config').then(r=>r.json()).then(config=>{
+ if(config.enabled&&config.environment==='sandbox'&&config.realPaymentsEnabled===false){
+  sandboxEnabled=true;$('sandbox-access').hidden=false;generate.disabled=false;generate.setAttribute('aria-disabled','false');generate.textContent='GERAR BOLETO DE TESTE — SANDBOX';
+  document.querySelector('.wizard-note').textContent='Homologação com dados fictícios. A entrada e a quitação são confirmadas apenas após o retorno automático do Asaas.';
+  buyer.querySelectorAll('input').forEach(input=>{if(input.name!=='privacy')input.autocomplete='off'});
+  buyer.parentElement.querySelector('p.hint').textContent='Use apenas dados fictícios neste Sandbox. Os dados do teste serão registrados para homologação.';
+ }
+}).catch(()=>{});
+generate.addEventListener('click',async()=>{
+ if(!sandboxEnabled||submitting)return;
+ if(!token.value){result.textContent='Informe o token de homologação.';return;}
+ if(!validateBuyer()){go(3);return;}
+ const data={fullName:buyer.elements.fullName.value.trim(),email:buyer.elements.email.value.trim().toLowerCase(),phone:buyer.elements.phone.value.replace(/\D/g,''),cpf:buyer.elements.cpf.value.replace(/\D/g,''),city:buyer.elements.city.value.trim(),state:buyer.elements.state.value,privacy:buyer.elements.privacy.checked,packageType:pkg,quantity:qty,paymentPlan:cash()?'cash':'entry'};
+ const digest=[...new Uint8Array(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(JSON.stringify(data))))].map(v=>v.toString(16).padStart(2,'0')).join('');
+ if(previousDigest&&previousDigest!==digest)attemptKey=crypto.randomUUID();
+ previousDigest=digest;sessionStorage.setItem('fbp-attempt-key',attemptKey);sessionStorage.setItem('fbp-attempt-digest',digest);
+ submitting=true;generate.disabled=true;back.disabled=true;result.textContent='Registrando pedido e gerando boleto Sandbox…';
+ try{
+  const r=await fetch('/api/checkout-sandbox',{method:'POST',headers:{'Content-Type':'application/json','x-checkout-test-token':token.value,'Idempotency-Key':attemptKey},body:JSON.stringify(data)});
+  const response=await r.json();
+  if(!r.ok)throw new Error(response.error||'Não foi possível concluir. Preserve esta tentativa.');
+  if(response.environment!=='sandbox')throw new Error('Ambiente inválido.');
+  const url=new URL(response.invoiceUrl);if(url.protocol!=='https:'||url.hostname!=='sandbox.asaas.com')throw new Error('Boleto inválido.');
+  reference=response.reference;result.textContent='Pedido '+reference+' registrado. Aguardando pagamento Sandbox.';
+  $('invoice-link').href=url.href;$('invoice-link').hidden=false;$('check-payment').hidden=false;
+  generate.textContent='RECUPERAR O MESMO BOLETO SANDBOX';
+ }catch(e){result.textContent=e.message||'Falha de comunicação. Tente novamente com a mesma tentativa.';}
+ finally{submitting=false;generate.disabled=false;back.disabled=false;}
+});
+$('check-payment').addEventListener('click',async()=>{
+ if(!reference||!token.value)return;
+ try{
+  const r=await fetch('/api/order-status-sandbox',{method:'POST',headers:{'Content-Type':'application/json','x-checkout-test-token':token.value},body:JSON.stringify({reference})});
+  const data=await r.json();if(!r.ok)throw new Error('Consulta indisponível.');
+  result.textContent=data.status==='paid'?'Pagamento integral confirmado automaticamente pelo Asaas.':data.status==='entry_paid'?'Entrada confirmada automaticamente pelo Asaas. Saldo restante: '+money(data.remaining_balance_cents/100):data.reconciliation_required?'Pedido em análise financeira. Contate o suporte.':'Pedido '+reference+': aguardando confirmação automática do Asaas.';
+ }catch(e){result.textContent=e.message;}
+});
 render();
 })();
 </script>

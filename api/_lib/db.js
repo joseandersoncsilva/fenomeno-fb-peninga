@@ -5,6 +5,8 @@ export async function db(path, { method = 'GET', body, prefer } = {}) {
   if (!base || !key) throw new Error('Supabase server environment is not configured');
   const response = await fetch(base.replace(/\/$/,'') + '/rest/v1/' + path, {
     method,
+    signal: AbortSignal.timeout(12000),
+    redirect: 'error',
     headers: {
       apikey: key,
       Authorization: 'Bearer ' + key,

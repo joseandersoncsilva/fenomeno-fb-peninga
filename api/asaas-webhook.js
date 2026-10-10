@@ -1,68 +1,35 @@
-import { timingSafeEqual } from 'node:crypto';
 import { db } from './_lib/db.js';
+import { asaas,safeEquals,sandboxReady } from './_lib/sandbox.js';
 
-function equals(a,b) {
- if(typeof a!=='string'||typeof b!=='string') return false;
- const x=Buffer.from(a),y=Buffer.from(b);
- return x.length===y.length&&timingSafeEqual(x,y);
-}
 export default async function handler(req,res) {
- res.setHeader('Cache-Control','no-store');
- if(req.method!=='POST') return res.status(405).json({error:'Method not allowed'});
- const token=process.env.ASAAS_WEBHOOK_TOKEN;
- if(!token) {
-   console.error('Asaas webhook: expected token missing in deployment environment');
-   return res.status(503).json({error:'Webhook not configured'});
- }
- if(!equals(req.headers['asaas-access-token'],token)) {
-   console.warn('Asaas webhook: invalid or missing authentication header');
-   return res.status(401).json({error:'Unauthorized'});
- }
- const event=req.body;
- if(!event||typeof event.id!=='string'||typeof event.event!=='string'||typeof event.payment?.id!=='string')
-   return res.status(400).json({error:'Invalid event'});
- if(process.env.ASAAS_ENV!=='sandbox'||!process.env.ASAAS_SANDBOX_API_KEY)
-   return res.status(503).json({error:'Sandbox not configured'});
- const paymentId=event.payment.id;
- try {
-   await db('asaas_webhook_events?on_conflict=asaas_event_id',{method:'POST',body:{
-      asaas_event_id:event.id,event_type:event.event,asaas_payment_id:paymentId,payload:event
-   },prefer:'resolution=ignore-duplicates,return=minimal'});
-   const local=await db('payments?asaas_payment_id=eq.'+encodeURIComponent(paymentId)+'&select=id,order_id,amount_cents');
-   if(local.length!==1) {
-      // Stored for later reconciliation (webhook may arrive before local payment insert).
-      console.warn('Webhook waiting for matching local payment',event.event);
-      return res.status(503).json({error:'Payment not yet registered; retry delivery'});
-   }
-   const response=await fetch('https://api-sandbox.asaas.com/v3/payments/'+encodeURIComponent(paymentId),{
-     headers:{access_token:process.env.ASAAS_SANDBOX_API_KEY,'User-Agent':'FBPeningaCheckout/0.1 (sandbox)'}
-   });
-   if(!response.ok) throw new Error('Asaas status lookup '+response.status);
-   const remote=await response.json();
-   if(remote.id!==paymentId||!Number.isFinite(Number(remote.value))||Math.round(Number(remote.value)*100)!==local[0].amount_cents)
-      throw new Error('Asaas payment identity or value mismatch');
-   const orderRows=await db('orders?id=eq.'+local[0].order_id+'&select=id,status,payment_plan,total_cents');
-   if(orderRows.length!==1) throw new Error('Payment order not found');
-   const order=orderRows[0];
-   const paid=['RECEIVED','CONFIRMED','RECEIVED_IN_CASH'].includes(remote.status);
-   await db('payments?id=eq.'+local[0].id,{method:'PATCH',body:{
-      status:remote.status,
-      ...(paid?{paid_at:remote.paymentDate||new Date().toISOString()}: {})
-   },prefer:'return=minimal'});
-   let newStatus=null;
-   if(['REFUNDED','PARTIALLY_REFUNDED'].includes(remote.status)) newStatus=remote.status==='REFUNDED'?'refunded':'partially_refunded';
-   else if(paid && !['refunded','partially_refunded'].includes(order.status))
-      newStatus=order.payment_plan==='cash'&&local[0].amount_cents===order.total_cents?'paid':'entry_paid';
-   else if(['DELETED'].includes(remote.status)&&['pending','awaiting_payment'].includes(order.status)) newStatus='cancelled';
-   if(newStatus&&newStatus!==order.status) await db('orders?id=eq.'+order.id,{method:'PATCH',body:{status:newStatus},prefer:'return=minimal'});
-   await db('asaas_webhook_events?asaas_event_id=eq.'+encodeURIComponent(event.id),{
-      method:'PATCH',body:{processed_at:new Date().toISOString(),processing_error:null},prefer:'return=minimal'});
-   return res.status(200).json({received:true});
- }catch(err) {
-   console.error('Webhook reconciliation error',err.message);
-   try {await db('asaas_webhook_events?asaas_event_id=eq.'+encodeURIComponent(event.id),{
-       method:'PATCH',body:{processing_error:String(err.message).slice(0,160)},prefer:'return=minimal'
-   });}catch{}
-   return res.status(500).json({error:'Retry later'});
- }
+  res.setHeader('Cache-Control','no-store');
+  if(req.method!=='POST')return res.status(405).json({error:'Method not allowed'});
+  if(!sandboxReady()||!process.env.ASAAS_WEBHOOK_TOKEN)return res.status(503).json({error:'Sandbox webhook not configured'});
+  if(!safeEquals(req.headers['asaas-access-token'],process.env.ASAAS_WEBHOOK_TOKEN))return res.status(401).json({error:'Unauthorized'});
+  const event=req.body;
+  if(!event||typeof event.id!=='string'||event.id.length>200||typeof event.event!=='string'
+    ||!event.event.startsWith('PAYMENT_')||!/^pay_[A-Za-z0-9]+$/.test(event.payment?.id||''))
+    return res.status(400).json({error:'Invalid payment event'});
+  try {
+    // Only store payment metadata. Names, CPF, contact data and invoice contents are unnecessary.
+    await db('asaas_webhook_events?on_conflict=asaas_event_id',{method:'POST',body:{
+      asaas_event_id:event.id,event_type:event.event,asaas_payment_id:event.payment.id,
+      payload:{id:event.id,event:event.event,payment:{id:event.payment.id}}
+    },prefer:'resolution=ignore-duplicates,return=minimal'});
+    const logged=await db('asaas_webhook_events?asaas_event_id=eq.'+encodeURIComponent(event.id)+'&select=asaas_payment_id,event_type,processed_at');
+    if(logged.length!==1||logged[0].asaas_payment_id!==event.payment.id||logged[0].event_type!==event.event)
+      return res.status(409).json({error:'Event identity conflict'});
+    if(logged[0].processed_at)return res.status(200).json({received:true,duplicate:true});
+    const remote=await asaas('/payments/'+encodeURIComponent(event.payment.id));
+    if(remote.id!==event.payment.id)throw new Error('Payment identity mismatch');
+    const result=await db('rpc/apply_sandbox_payment',{method:'POST',body:{p_remote:remote,p_event_id:event.id}});
+    console.info('Sandbox webhook processed',JSON.stringify({eventId:event.id,eventType:event.event,
+      reference:result.reference||null,orderStatus:result.orderStatus||null,ignored:Boolean(result.ignored)}));
+    return res.status(200).json({received:true,...(result.ignored?{ignored:true}:{})});
+  } catch {
+    console.error('Sandbox webhook reconciliation failed',JSON.stringify({eventId:event.id}));
+    try {await db('asaas_webhook_events?asaas_event_id=eq.'+encodeURIComponent(event.id),{
+      method:'PATCH',body:{processing_error:'reconciliation_failed_retry_required'},prefer:'return=minimal'});}catch{}
+    return res.status(503).json({error:'Reconciliation pending; retry delivery'});
+  }
 }
