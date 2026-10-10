@@ -52,7 +52,7 @@ begin
    return jsonb_build_object('claimed',false,'request',to_jsonb(r));
  end if;
  perform pg_advisory_xact_lock(hashtextextended('checkout-hash:'||p_hash,0));
- select * into r from public.checkout_requests where request_hash=p_hash and created_at>now()-interval '15 minutes' order by created_at desc limit 1;
+ select * into r from public.checkout_requests where request_hash=p_hash and (status in ('processing','needs_review') or created_at>now()-interval '15 minutes') order by created_at desc limit 1;
  if found then return jsonb_build_object('claimed',false,'request',to_jsonb(r)); end if;
  q:=(p_data->>'quantity')::integer; pkg:=(p_data->>'packageType')::integer;
  if q<1 or q>100 or pkg not in (1,3) or p_data->>'paymentPlan' not in ('cash','entry') then raise exception 'Invalid offer'; end if;

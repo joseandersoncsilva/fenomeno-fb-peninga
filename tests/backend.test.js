@@ -28,3 +28,19 @@ test('in-progress and body-conflict reservations never create charges',async()=>
 test('duplicate webhook acknowledged without remote lookup',async()=>{const original=global.fetch;let calls=0;global.fetch=async(url)=>{calls++;assert(!String(url).includes('api-sandbox.asaas.com'));return calls===1?new Response(null,{status:201}):reply([{asaas_payment_id:'pay_test123',event_type:'PAYMENT_RECEIVED',processed_at:'2026-10-10T00:00:00Z'}]);};try{const r=await invoke(webhook,req({id:'evt_test',event:'PAYMENT_RECEIVED',payment:{id:'pay_test123'}},{'asaas-access-token':process.env.ASAAS_WEBHOOK_TOKEN}));assert.equal(r.code,200);assert.equal(r.body.duplicate,true);assert.equal(calls,2);}finally{global.fetch=original;}});
 test('webhook uses API snapshot instead of forged payment value and status',async()=>{const original=global.fetch;const remote={id:'pay_test123',status:'PENDING',value:100,externalReference:'FBP-ABC123456789'};let rpc;global.fetch=async(url,options)=>{url=String(url);if(url.includes('/rpc/apply_sandbox_payment')){rpc=JSON.parse(options.body);return reply({orderStatus:'awaiting_payment'});}if(url.includes('api-sandbox.asaas.com'))return reply(remote);if(options.method==='POST')return new Response(null,{status:201});return reply([{asaas_payment_id:'pay_test123',event_type:'PAYMENT_RECEIVED',processed_at:null}]);};try{const r=await invoke(webhook,req({id:'evt_test',event:'PAYMENT_RECEIVED',payment:{id:'pay_test123',status:'RECEIVED',value:0.01}},{'asaas-access-token':process.env.ASAAS_WEBHOOK_TOKEN}));assert.equal(r.code,200);assert.deepEqual(rpc.p_remote,remote);}finally{global.fetch=original;}});
 test('API identity mismatch returns retry and never acknowledges financial write',async()=>{const original=global.fetch;let applied=false;global.fetch=async(url,options)=>{url=String(url);if(url.includes('/rpc/'))applied=true;if(url.includes('api-sandbox'))return reply({id:'pay_wrong'});if(options.method==='GET')return reply([{asaas_payment_id:'pay_test123',event_type:'PAYMENT_RECEIVED',processed_at:null}]);return new Response(null,{status:201});};try{const r=await invoke(webhook,req({id:'evt_test',event:'PAYMENT_RECEIVED',payment:{id:'pay_test123'}},{'asaas-access-token':process.env.ASAAS_WEBHOOK_TOKEN}));assert.equal(r.code,503);assert.equal(applied,false);}finally{global.fetch=original;}});
+
+
+test('uncertain Asaas POST is not retried and freezes the reservation for review',async()=>{
+ const original=global.fetch;let posts=0,held=false;
+ global.fetch=async(url,options)=>{
+  url=String(url);
+  if(url.includes('/rpc/reserve_sandbox_checkout'))return reply(held?{claimed:false,request:{status:'needs_review'}}:{claimed:true,request:{},customer:{id:'customer-fixture',asaas_customer_id:'cus_fixture'},order:{id:'order-fixture',public_reference:'FBP-ABC123456789',initial_due_cents:10000}});
+  if(url.includes('api-sandbox.asaas.com/v3/payments?'))return reply({data:[]});
+  if(url.endsWith('/v3/payments')&&options.method==='POST'){posts++;throw new Error('Simulated timeout after an uncertain POST');}
+  if(url.includes('checkout_requests')&&options.method==='PATCH'){held=JSON.parse(options.body).status==='needs_review';return new Response(null,{status:204});}
+  if(url.includes('/orders?'))return new Response(null,{status:204});
+  throw new Error('Unexpected request');
+ };
+ try {assert.equal((await invoke(checkout,req())).code,502);assert(held);assert.equal((await invoke(checkout,req())).code,409);assert.equal(posts,1);}
+ finally{global.fetch=original;}
+});

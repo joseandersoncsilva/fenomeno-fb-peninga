@@ -333,7 +333,7 @@ generate.addEventListener('click',async()=>{
  try{
   const r=await fetch('/api/checkout-sandbox',{method:'POST',headers:{'Content-Type':'application/json','x-checkout-test-token':token.value,'Idempotency-Key':attemptKey},body:JSON.stringify(data)});
   const response=await r.json();
-  if(!r.ok)throw new Error(response.error||'Não foi possível concluir. Preserve esta tentativa.');
+  if(!r.ok)throw new Error((response.error||'Não foi possível concluir. Preserve esta tentativa.')+(response.reference?' Pedido: '+response.reference:''));
   if(response.environment!=='sandbox')throw new Error('Ambiente inválido.');
   const url=new URL(response.invoiceUrl);if(url.protocol!=='https:'||url.hostname!=='sandbox.asaas.com')throw new Error('Boleto inválido.');
   reference=response.reference;result.textContent='Pedido '+reference+' registrado. Aguardando pagamento Sandbox.';

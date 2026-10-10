@@ -1,30 +1,54 @@
 # Integração Supabase + Asaas — FB Peninga
 
-**Status: preparação técnica, NÃO publicar cobranças reais.** Esta branch não altera a página-ponte `index.html`.
+**Checkout Sandbox homologado na Preview. Cobranças reais desativadas.**
 
-## Projeto Supabase
-- ID: `oqefeihbtmzandayxoat`
-- API URL: `https://oqefeihbtmzandayxoat.supabase.co`
-- Tabelas existentes: `customers`, `orders`, `payments`, `asaas_webhook_events`.
-- RLS habilitado, sem acesso público: operações apenas por servidor autorizado.
+Consulte `HOMOLOGACAO_SANDBOX.md` para resultados, eventos recebidos e limites da homologação.
 
-## Variáveis de ambiente na Vercel (server-side)
-- `SUPABASE_URL`: URL do projeto acima.
-- `SUPABASE_SECRET_KEY`: chave de servidor do Supabase (NUNCA usar NEXT_PUBLIC_ ou colocar em HTML).
-- `ASAAS_WEBHOOK_TOKEN`: token de autenticação do webhook, DIFERENTE da API key Asaas.
+## Ambiente autorizado
 
-Não versionar os valores secretos. Configurar primeiro no ambiente Preview.
-O endpoint `POST /api/asaas-webhook` valida o token recebido no header `asaas-access-token`, registra o evento com ID único, e retorna 200 após a gravação. Eventos repetidos não geram duplicatas.
+- GitHub: `joseandersoncsilva/fenomeno-fb-peninga`, branch `feat/supabase-asaas-backend`.
+- Vercel: `fenomeno-fb-peninga`, exclusivamente Preview.
+- Supabase: `oqefeihbtmzandayxoat`.
+- Página de vendas: `/comprar/`.
+- Asaas: exclusivamente `https://api-sandbox.asaas.com/v3`.
 
-## Pendente antes de operar
-1. Confirmar qual projeto Vercel hospeda a página de **vendas**: o repositório encontrado hoje contém a página-ponte de cadastro/grupo WhatsApp.
-2. Configurar variáveis na Vercel da aplicação correta.
-3. Criar checkout server-side com Asaas em **sandbox**: cadastro do cliente, pedido, cobrança avulsa ou parcelada e persistência dos IDs.
-4. Implementar conciliação de pagamentos consultando o estado atual do Asaas; não marcar pedido como pago só ao receber um evento.
-5. Para parcelamentos, conciliar **todas as parcelas** antes de concluir a quitação do pedido.
-6. Configurar o webhook na conta Asaas com o token e a URL do endpoint, após homologar.
-7. Testar duplicidade de eventos, requisições inválidas, cobrança falha e dados pessoais; revisar antes de fazer merge em main.
+Os endpoints rejeitam produção e outras branches. `index.html` da página-ponte permanece sem alterações.
 
-**Observação importante:** a oferta de 20x R$100 sem juros depende da modalidade e das condições efetivamente habilitadas na conta Asaas. Não presumir parcelamento gratuito sem conferir taxas.
+## Variáveis server-side
 
-Documentação: https://docs.asaas.com/docs/sobre-os-webhooks
+`SUPABASE_URL`, `SUPABASE_SECRET_KEY`, `ASAAS_ENV=sandbox`, `ASAAS_SANDBOX_API_KEY`, `ASAAS_WEBHOOK_TOKEN`, `CHECKOUT_TEST_TOKEN`.
+
+Não versionar valores secretos nem usar prefixos públicos. A chave de produção existente não é usada por esse fluxo. O webhook exige `asaas-access-token`; checkout, estado e conciliação exigem `x-checkout-test-token`.
+
+## Contratos
+
+- `GET /api/checkout-config`: configuração pública sem credenciais; pagamentos reais sempre desativados.
+- `POST /api/checkout-sandbox`: comprador fictício, CPF de fixture válido, telefone, cidade/UF, privacy=true, packageType 1 ou 3, quantity 1–100, paymentPlan entry ou cash; exige `Idempotency-Key` de 16–100 caracteres.
+- `POST /api/asaas-webhook`: autenticação, metadados únicos, consulta à API do Asaas e transação financeira. Sucesso somente com HTTP 200.
+- `POST /api/order-status-sandbox`: reference do pedido; retorna estado e saldo, sem dados pessoais.
+- `POST /api/reconcile-sandbox`: paymentId ou reference; consulta remota antes de corrigir registros, sem emitir cobrança.
+
+A entrada custa R$ 100 por pacote. Contratação: R$ 2.000 por pacote de 3 coberturas ou R$ 1.000 pela cobertura individual. Pagamento integral aplica o desconto de 10% que já constava na página. A entrada não significa quitação; parcelas posteriores continuam sob formalização comercial.
+
+## Banco e segurança
+
+`db/sandbox-hardening.sql` é o script reproduzível aplicado ao projeto existente. Não é uma migração de inicialização: pressupõe as quatro tabelas anteriores. Foram adicionadas `checkout_requests` e `sandbox_verification_runs`.
+
+Todas as tabelas usam RLS, sem políticas públicas. As duas funções financeiras usam SECURITY INVOKER, search_path fixo e permissão exclusiva para service_role. Não expor funções/tabelas financeiras ao navegador.
+
+Resultados ambíguos ficam em needs_review e impedem nova emissão automática. O conciliador busca uma cobrança pela referência externa; múltiplas cobranças exigem análise. O banco aceita apenas a cobrança inicial deste fluxo, sem assinatura ou parcelamento automático.
+
+## Verificação
+
+- `npm test`: testes locais sem credenciais reais.
+- `tests/database-rollback.sql`: asserções no Supabase com rollback.
+- `npm run build`: copia somente arquivos públicos; não dispara homologação por padrão.
+- `scripts/homologate-sandbox.mjs`: execução manual controlada dentro da Vercel, opt-in por ID único em `FBP_SANDBOX_HOMOLOGATION`, apenas Preview/branch. Pode criar e confirmar cobranças fictícias; não habilitar sem intenção de testar. Cada run_id é registrado e não se repete automaticamente. `FBP_SANDBOX_FIXTURE_RUN` é opcional para reaproveitar uma tentativa previamente identificada.
+
+A homologação lê a configuração existente do webhook sem registrar tokens/URL de bypass, testa autenticação/idempotência e exige novos eventos do Asaas. Nenhuma conciliação manual substitui a confirmação automática exigida pelo teste.
+
+Estado final das flags: homologação `off`, fixture de retomada vazia. Deploys normais não movimentam o Sandbox.
+
+## Antes de produção
+
+Autorização para publicação/merge e pagamentos reais; revisão das condições comerciais, política/consentimento, credenciais de produção e webhook; definição de parcelas posteriores, monitoramento e recuperação operacional. A revisão visual no navegador protegido ainda exige login. Não promover esta Preview diretamente esperando habilitar produção: os bloqueios atuais são intencionais.

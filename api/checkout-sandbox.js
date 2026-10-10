@@ -84,6 +84,6 @@ export default async function handler(req,res) {
       await db('checkout_requests?idempotency_key=eq.'+encodeURIComponent(key),{method:'PATCH',body:{status:'needs_review',updated_at:new Date().toISOString()},prefer:'return=minimal'});
       await db('orders?id=eq.'+reservation.order.id,{method:'PATCH',body:{reconciliation_required:true},prefer:'return=minimal'});
     } catch {}
-    return res.status(502).json({error:'Pedido requer conciliação. Não gere outra cobrança; contate o suporte.'});
+    return res.status(502).json({error:'Pedido requer conciliação. Não gere outra cobrança; contate o suporte.',code:'RECONCILIATION_REQUIRED',...(reservation?.order?.public_reference?{reference:reservation.order.public_reference}:{})});
   }
 }
