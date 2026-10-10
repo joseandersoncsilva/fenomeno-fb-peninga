@@ -40,7 +40,7 @@ export default async function handler(req,res){
    const customer=customers[0];
    const orders=await db('orders?select=id,public_reference',{method:'POST',body:{customer_id:customer.id,offer_type:pkg===3?'package_3':'single',package_quantity:q,coverage_quantity:q*pkg,payment_plan:paymentPlan,total_cents:totalCents,initial_due_cents:chargeCents,remaining_balance_cents:remaining},prefer:'return=representation'});
    const order=orders[0];
-   const payer=await asaas('/customers',{name:fullName.trim(),email:email.trim().toLowerCase(),mobilePhone:digits(phone),cpfCnpj:digits(cpf)});
+   const payer=await asaas('/customers',{name:fullName.trim(),email:email.trim().toLowerCase(),cpfCnpj:digits(cpf),externalReference:customer.id,notificationDisabled:true});
    await db('customers?id=eq.'+customer.id,{method:'PATCH',body:{asaas_customer_id:payer.id},prefer:'return=minimal'});
    const due=new Date(Date.now()+5*86400000).toISOString().slice(0,10);
    const payment=await asaas('/payments',{customer:payer.id,billingType:'BOLETO',value:chargeCents/100,dueDate:due,description:'FB Peninga - '+order.public_reference+' - '+(paymentPlan==='entry'?'entrada':'a vista'),externalReference:order.public_reference});
