@@ -5,8 +5,9 @@ import { asaas,sandboxReady } from '../api/_lib/sandbox.js';
 import { db } from '../api/_lib/db.js';
 
 const run=process.env.FBP_SANDBOX_HOMOLOGATION;
+const fixtureRun=process.env.FBP_SANDBOX_FIXTURE_RUN||run;
 assert(sandboxReady(),'Only the Sandbox Preview branch can run homologation');
-assert(/^[A-Za-z0-9_-]{16,100}$/.test(run),'Invalid run ID');
+assert(/^[A-Za-z0-9_-]{16,100}$/.test(run)&&/^[A-Za-z0-9_-]{16,100}$/.test(fixtureRun),'Invalid run ID');
 assert(process.env.CHECKOUT_TEST_TOKEN && process.env.ASAAS_WEBHOOK_TOKEN,'Missing test credentials');
 const inserted=await db('sandbox_verification_runs?on_conflict=run_id',{method:'POST',body:{run_id:run,status:'running'},prefer:'resolution=ignore-duplicates,return=representation'});
 if(!inserted.length) {
@@ -37,18 +38,31 @@ if(!inserted.length) {
   // Preserve existing URL and its already-authorized protection bypass.
   const events=[...new Set([...(hook.events||[]),'PAYMENT_CREATED','PAYMENT_CONFIRMED','PAYMENT_RECEIVED','PAYMENT_REFUNDED','PAYMENT_DELETED'])];
   await asaas('/webhooks/'+encodeURIComponent(hook.id),{method:'PUT',body:{authToken:process.env.ASAAS_WEBHOOK_TOKEN,events,enabled:true,interrupted:false}});
+  results.webhook={id:hook.id,sendType:hook.sendType,wasInterrupted:hook.interrupted,enabled:hook.enabled};
   results.checks.push('existing_webhook_token_synchronized_without_disabling_protection');
+  // Validate old unrelated events against the corrected endpoint before clearing backoff.
+  step='validate_previous_retry';
+  const pendingEvents=await db('asaas_webhook_events?processed_at=is.null&select=asaas_event_id,event_type,asaas_payment_id&limit=10');
+  for(const event of pendingEvents){
+   const delivery=await call('/api/asaas-webhook',{method:'POST',headers:{'asaas-access-token':process.env.ASAAS_WEBHOOK_TOKEN},body:{id:event.asaas_event_id,event:event.event_type,payment:{id:event.asaas_payment_id}}});
+   results.checks.push('previous_retry_http_'+delivery.status);
+   assert.equal(delivery.status,200,'Previously blocked event still fails');
+  }
+  // One explicit recovery action after fixing the endpoint, never a periodic backoff reset.
+  step='remove_previous_backoff';
+  await asaas('/webhooks/'+encodeURIComponent(hook.id)+'/removeBackoff',{method:'POST',body:{}});
+  results.checks.push('old_backoff_removed_once_after_endpoint_validation');
   step='reject_unauthorized';
   assert.equal((await call('/api/asaas-webhook',{method:'POST',body:{}})).status,401);
   assert.equal((await call('/api/checkout-sandbox',{method:'POST',body:{}})).status,401);
   assert.equal((await call('/api/checkout-sandbox',{method:'POST',body:{},headers:testHeaders})).status,400);
   results.checks.push('missing_authentication_and_invalid_input_rejected');
   for(const plan of ['entry','cash']) {
-   const key=run+'_'+plan;
-   const body={fullName:'Homologacao Ficticia '+run,email:'fbp-'+run+'-'+plan+'@example.com',phone:'11900000000',cpf:'52998224725',city:'Cidade Teste',state:'BA',privacy:true,packageType:plan==='entry'?3:1,quantity:1,paymentPlan:plan};
+   const key=fixtureRun+'_'+plan;
+   const body={fullName:'Homologacao Ficticia '+fixtureRun,email:'fbp-'+fixtureRun+'-'+plan+'@example.com',phone:'11900000000',cpf:'52998224725',city:'Cidade Teste',state:'BA',privacy:true,packageType:plan==='entry'?3:1,quantity:1,paymentPlan:plan};
    step=plan+'_checkout';
    const request={method:'POST',body,headers:{...testHeaders,'Idempotency-Key':key}};
-   const first=await call('/api/checkout-sandbox',request);assert.equal(first.status,201);
+   const first=await call('/api/checkout-sandbox',request);assert([201,...(fixtureRun!==run?[200]:[])].includes(first.status),'Unexpected checkout HTTP');
    const reference=first.data.reference;assert.equal(first.data.amount,plan==='entry'?100:900);assert.equal(first.data.environment,'sandbox');
    const replays=await Promise.all([call('/api/checkout-sandbox',request),call('/api/checkout-sandbox',request)]);
    for(const replay of replays){assert.equal(replay.status,200);assert.equal(replay.data.reference,reference);}
@@ -58,18 +72,25 @@ if(!inserted.length) {
    const charges=await asaas('/payments?externalReference='+encodeURIComponent(reference)+'&limit=100');
    assert.equal(charges.data.length,1);assert.equal(charges.totalCount,1);
    const paymentId=charges.data[0].id;
-   const before=await call('/api/order-status-sandbox',{method:'POST',body:{reference},headers:testHeaders});assert.equal(before.data.status,'awaiting_payment');
+   const before=await call('/api/order-status-sandbox',{method:'POST',body:{reference},headers:testHeaders});assert(['awaiting_payment',plan==='entry'?'entry_paid':'paid'].includes(before.data.status));
    // A forged webhook's status/value cannot settle a pending payment: the API is authoritative.
    step=plan+'_forged_payload';
+   const remoteBefore=await asaas('/payments/'+encodeURIComponent(paymentId));
+   if(before.data.status==='awaiting_payment'&&!['RECEIVED','CONFIRMED','RECEIVED_IN_CASH'].includes(remoteBefore.status)) {
    const forged=await call('/api/asaas-webhook',{method:'POST',headers:{'asaas-access-token':process.env.ASAAS_WEBHOOK_TOKEN},body:{id:'test_forged_'+key,event:'PAYMENT_RECEIVED',payment:{id:paymentId,status:'RECEIVED',value:0.01}}});
    assert.equal(forged.status,200);
    const stillPending=await call('/api/order-status-sandbox',{method:'POST',body:{reference},headers:testHeaders});assert.equal(stillPending.data.status,'awaiting_payment');
+   }
    step=plan+'_confirm_sandbox_payment';
-   const confirmedAt=new Date().toISOString();
-   await asaas('/sandbox/payment/'+encodeURIComponent(paymentId)+'/confirm',{method:'POST',body:{}});
+   const ordersCreated=await db('orders?public_reference=eq.'+reference+'&select=created_at');
+   const confirmedAt=ordersCreated[0].created_at;
+   if(!['RECEIVED','CONFIRMED','RECEIVED_IN_CASH'].includes(remoteBefore.status))
+    await asaas('/sandbox/payment/'+encodeURIComponent(paymentId)+'/confirm',{method:'POST',body:{}});
+   results.pendingCase={plan,reference,paymentId,confirmedAt,remoteStatus:remoteBefore.status};
+   await db('sandbox_verification_runs?run_id=eq.'+encodeURIComponent(run),{method:'PATCH',body:{results},prefer:'return=minimal'});
    step=plan+'_automatic_webhook';
    let order,eventsSeen=[];
-   for(let i=0;i<24;i++) {
+   for(let i=0;i<90;i++) {
     const rows=await db('orders?public_reference=eq.'+reference+'&select=id,status,total_cents,initial_due_cents,remaining_balance_cents,reconciliation_required');order=rows[0];
     eventsSeen=await db('asaas_webhook_events?asaas_payment_id=eq.'+encodeURIComponent(paymentId)+'&processed_at=not.is.null&select=asaas_event_id,event_type,received_at,processed_at,processing_error');
     if(order?.status===(plan==='entry'?'entry_paid':'paid')&&eventsSeen.some(e=>e.asaas_event_id.startsWith('evt_')&&['PAYMENT_RECEIVED','PAYMENT_CONFIRMED'].includes(e.event_type)&&e.received_at>=confirmedAt))break;

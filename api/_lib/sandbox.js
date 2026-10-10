@@ -25,6 +25,7 @@ export async function asaas(path, { method = 'GET', body } = {}) {
     // Never log remote descriptions: they can contain personal data or credentials.
     throw new Error('Asaas HTTP ' + response.status);
   }
+  if(response.status===204)return null;
   return response.json();
 }
 
