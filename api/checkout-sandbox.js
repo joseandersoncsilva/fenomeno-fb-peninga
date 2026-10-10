@@ -74,7 +74,7 @@ export default async function handler(req,res) {
     const url=invoiceURL(verified.invoiceUrl);
     const result=await db('rpc/apply_sandbox_payment',{method:'POST',body:{p_remote:verified}});
     const response={reference:order.public_reference,invoiceUrl:url,amount:order.initial_due_cents/100,
-      environment:'sandbox',orderStatus:result.orderStatus,notice:'Teste sem movimentação real'};
+      environment:'sandbox',dueDate:verified.dueDate||null,orderStatus:result.orderStatus,notice:'Teste sem movimentação real'};
     await db('checkout_requests?idempotency_key=eq.'+encodeURIComponent(key),{method:'PATCH',body:{
       status:'completed',response,updated_at:new Date().toISOString()},prefer:'return=minimal'});
     return res.status(201).json({...response,statusAccess:issueStatusAccess(order.public_reference)});
