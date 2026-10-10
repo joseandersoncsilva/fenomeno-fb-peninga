@@ -14,5 +14,8 @@ export async function db(path, { method = 'GET', body, prefer } = {}) {
     ...(body === undefined ? {} : { body: JSON.stringify(body) })
   });
   if (!response.ok) throw new Error('Supabase request failed: ' + response.status);
-  return response.status === 204 ? null : response.json();
+  const payload = await response.text();
+  if (!payload.trim()) return null;
+  try { return JSON.parse(payload); }
+  catch { throw new Error('Supabase returned an invalid JSON response'); }
 }
