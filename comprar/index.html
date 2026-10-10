@@ -112,6 +112,7 @@
 .wizard-bars{display:grid;grid-template-columns:repeat(5,1fr);gap:5px;margin-top:9px}
 .wizard-bars i{height:5px;border-radius:20px;background:#424a40}
 .wizard-bars i.active{background:#d3b57a}
+.checkout-wizard [hidden]{display:none!important}
 .wizard-panel[hidden],.wizard-navigation button[hidden],.wizard-error[hidden]{display:none}
 .wizard-panel h3{font-size:22px;margin:0 0 18px}
 .wizard-panel .summary{margin-top:20px}
@@ -247,8 +248,11 @@
    <div class="line"><span>Saldo após pagamento inicial</span><strong id="review-balance"></strong></div>
    <div class="line final"><span id="review-initial-label">Entrada</span><strong id="review-initial"></strong></div>
   </div>
-  <button class="cta" type="button" disabled aria-disabled="true">GERAR MEU BOLETO — EM BREVE</button>
-  <p class="hint wizard-note">Demonstração: nenhum boleto será gerado e nenhuma reserva será confirmada antes da integração com o Asaas.</p>
+  <div id="sandbox-access" hidden><p class="hint">TESTE SANDBOX — use somente dados fictícios. Pagamentos reais estão desativados.</p><label>Token de homologação<input id="sandbox-token" type="password" autocomplete="off" spellcheck="false"></label></div>
+  <button id="generate-boleto" class="cta" type="button" disabled aria-disabled="true">GERAR MEU BOLETO — EM BREVE</button>
+  <p id="checkout-result" role="status"></p><a id="invoice-link" class="cta" target="_blank" rel="noopener noreferrer" hidden>ABRIR BOLETO SANDBOX</a>
+  <div id="order-receipt" class="summary" hidden aria-live="polite"><h3>Seu pedido</h3><div class="line"><span>Referência</span><strong id="receipt-reference"></strong></div><div class="line"><span>Valor do boleto</span><strong id="receipt-amount"></strong></div><div class="line"><span>Vencimento</span><strong id="receipt-due"></strong></div><div class="line final"><span>Status</span><strong id="receipt-status">Aguardando pagamento</strong></div><p id="receipt-balance" class="hint"></p><p class="hint">A situação do pagamento é atualizada automaticamente nesta página.</p></div>
+  <p class="hint wizard-note">A geração de boleto está disponível somente no ambiente Sandbox autenticado. Cobranças reais permanecem desativadas.</p>
  </div>
  <div class="wizard-navigation"><button type="button" id="wizard-back" class="wizard-back" hidden>Voltar</button><button type="button" id="wizard-next" class="cta">CONTINUAR</button></div>
 </section>
@@ -299,14 +303,80 @@ function validateBuyer(){
 function go(n){step=Math.max(0,Math.min(4,n));if(step===4)review();render();$('selecionar-pacote').scrollIntoView({behavior:'smooth',block:'start'});}
 document.querySelectorAll('.wizard-package').forEach(b=>b.addEventListener('click',()=>{pkg=Number(b.dataset.choice);render()}));
 $('minus').addEventListener('click',()=>{qty=Math.max(1,qty-1);render()});
-$('plus').addEventListener('click',()=>{qty=Math.min(500,qty+1);render()});
+$('plus').addEventListener('click',()=>{qty=Math.min(100,qty+1);render()});
 document.querySelectorAll('input[name="pay"]').forEach(e=>e.addEventListener('change',render));
 next.addEventListener('click',()=>{if(step===3&&!validateBuyer())return;go(step+1)});
 back.addEventListener('click',()=>go(step-1));
 buyer.addEventListener('submit',e=>{e.preventDefault();if(validateBuyer())go(4)});
 document.querySelectorAll('.offer-cta[data-package]').forEach(a=>a.addEventListener('click',()=>{pkg=Number(a.dataset.package);step=1;render()}));
 buyer.elements.cpf.addEventListener('input',e=>{const d=e.target.value.replace(/\D/g,'').slice(0,11);e.target.value=d.replace(/^(\d{3})(\d)/,'$1.$2').replace(/^(\d{3})\.(\d{3})(\d)/,'$1.$2.$3').replace(/\.(\d{3})(\d{1,2})$/,'.$1-$2')});
-render();
+let sandboxEnabled=false,submitting=false,reference=null,pollTimer=null,activeStatusAccess=null,attemptKey=sessionStorage.getItem('fbp-attempt-key')||crypto.randomUUID();
+let previousDigest=sessionStorage.getItem('fbp-attempt-digest');
+const savedOrderKey='fbp-sandbox-order-v1';
+const generate=$('generate-boleto'),result=$('checkout-result'),token=$('sandbox-token');
+function statusText(s){return s==='paid'?'Pago':s==='entry_paid'?'Entrada paga':s==='awaiting_payment'||s==='pending'?'Aguardando pagamento':s==='cancelled'?'Cancelado':s==='refunded'?'Estornado':'Em análise';}
+function presentOrder(o){
+ reference=o.reference;activeStatusAccess=o.statusAccess;
+ $('order-receipt').hidden=false;$('receipt-reference').textContent=o.reference;
+ $('receipt-amount').textContent=money(Number(o.amount)||0);
+ $('receipt-due').textContent=o.dueDate?new Date(o.dueDate+'T12:00:00').toLocaleDateString('pt-BR'):'Consulte o boleto';
+ const url=new URL(o.invoiceUrl);if(url.protocol!=='https:'||url.hostname!=='sandbox.asaas.com')throw Error('Endereço do boleto inválido');
+ $('invoice-link').href=url.href;$('invoice-link').hidden=false;
+ generate.hidden=true;$('sandbox-access').hidden=true;back.hidden=true;next.hidden=true;
+ step=4;render();back.hidden=true;next.hidden=true;
+ document.querySelector('[data-step="4"] > .summary').hidden=true;
+ document.querySelector('[data-step="4"] > h3').textContent='Acompanhe seu pedido';
+}
+async function refreshOrder(){
+ if(!reference||!activeStatusAccess)return;
+ try{
+  const r=await fetch('/api/order-status-sandbox',{method:'POST',cache:'no-store',headers:{'Content-Type':'application/json'},body:JSON.stringify({reference,statusAccess:activeStatusAccess})});
+  if(r.status===401){clearInterval(pollTimer);result.textContent='Acesso ao pedido expirou. Entre em contato com o suporte para recuperar o pedido.';return;}
+  if(!r.ok)throw Error('Consulta temporariamente indisponível');
+  const data=await r.json(),s=data.status;
+  $('receipt-status').textContent=statusText(s);
+  $('receipt-balance').textContent=s==='entry_paid'?'Saldo contratual restante: '+money(data.remaining_balance_cents/100):s==='paid'?'Pagamento integral confirmado.':'A confirmação será exibida automaticamente após o processamento bancário.';
+  if(s==='paid'||s==='entry_paid'||s==='cancelled'||s==='refunded'){clearInterval(pollTimer);pollTimer=null;}
+ }catch{result.textContent='Não foi possível atualizar agora; tentaremos novamente automaticamente.';}
+}
+function beginPolling(){clearInterval(pollTimer);refreshOrder();pollTimer=setInterval(refreshOrder,15000);}
+function restoreOrder(){
+ try{const o=JSON.parse(localStorage.getItem(savedOrderKey)||'null');
+  if(!o||!o.reference||!o.statusAccess||!o.invoiceUrl||!o.savedAt||Date.now()-o.savedAt>7*86400000){localStorage.removeItem(savedOrderKey);return;}
+  presentOrder(o);beginPolling();result.textContent='Pedido recuperado neste dispositivo, sem gerar nova cobrança.';
+ }catch{localStorage.removeItem(savedOrderKey);}
+}
+fetch('/api/checkout-config').then(r=>r.json()).then(config=>{
+ if(config.enabled&&config.environment==='sandbox'&&config.realPaymentsEnabled===false){
+  sandboxEnabled=true;if(!reference){$('sandbox-access').hidden=false;generate.disabled=false;generate.setAttribute('aria-disabled','false');generate.textContent='GERAR BOLETO DE TESTE — SANDBOX';}
+  document.querySelector('.wizard-note').textContent='Homologação com dados fictícios. A entrada e a quitação são confirmadas apenas após o retorno automático do Asaas.';
+  buyer.querySelectorAll('input').forEach(input=>{if(input.name!=='privacy')input.autocomplete='off'});
+  buyer.parentElement.querySelector('p.hint').textContent='Use apenas dados fictícios neste Sandbox. Os dados do teste serão registrados para homologação.';
+ }
+}).catch(()=>{});
+generate.addEventListener('click',async()=>{
+ if(!sandboxEnabled||submitting)return;
+ if(!token.value){result.textContent='Informe o token de homologação.';return;}
+ if(!validateBuyer()){go(3);return;}
+ const data={fullName:buyer.elements.fullName.value.trim(),email:buyer.elements.email.value.trim().toLowerCase(),phone:buyer.elements.phone.value.replace(/\D/g,''),cpf:buyer.elements.cpf.value.replace(/\D/g,''),city:buyer.elements.city.value.trim(),state:buyer.elements.state.value,privacy:buyer.elements.privacy.checked,packageType:pkg,quantity:qty,paymentPlan:cash()?'cash':'entry'};
+ const digest=[...new Uint8Array(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(JSON.stringify(data))))].map(v=>v.toString(16).padStart(2,'0')).join('');
+ if(previousDigest&&previousDigest!==digest)attemptKey=crypto.randomUUID();
+ previousDigest=digest;sessionStorage.setItem('fbp-attempt-key',attemptKey);sessionStorage.setItem('fbp-attempt-digest',digest);
+ submitting=true;generate.disabled=true;back.disabled=true;result.textContent='Registrando pedido e gerando boleto Sandbox…';
+ try{
+  const r=await fetch('/api/checkout-sandbox',{method:'POST',headers:{'Content-Type':'application/json','x-checkout-test-token':token.value,'Idempotency-Key':attemptKey},body:JSON.stringify(data)});
+  const response=await r.json();
+  if(!r.ok)throw new Error((response.error||'Não foi possível concluir. Preserve esta tentativa.')+(response.reference?' Pedido: '+response.reference:''));
+  if(response.environment!=='sandbox')throw new Error('Ambiente inválido.');
+  const url=new URL(response.invoiceUrl);if(url.protocol!=='https:'||url.hostname!=='sandbox.asaas.com')throw new Error('Boleto inválido.');
+  if(!response.statusAccess)throw new Error('Não foi possível preparar acesso ao pedido; preserve a referência.');
+  const saved={reference:response.reference,statusAccess:response.statusAccess,invoiceUrl:url.href,amount:response.amount,dueDate:response.dueDate,savedAt:Date.now()};
+  localStorage.setItem(savedOrderKey,JSON.stringify(saved));presentOrder(saved);beginPolling();
+  result.textContent='Boleto de teste gerado. Guarde a referência '+reference+'.';
+ }catch(e){result.textContent=e.message||'Falha de comunicação. Tente novamente com a mesma tentativa.';}
+ finally{submitting=false;generate.disabled=false;back.disabled=false;}
+});
+render();restoreOrder();
 })();
 </script>
 </body></html>
