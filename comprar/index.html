@@ -310,9 +310,9 @@ back.addEventListener('click',()=>go(step-1));
 buyer.addEventListener('submit',e=>{e.preventDefault();if(validateBuyer())go(4)});
 document.querySelectorAll('.offer-cta[data-package]').forEach(a=>a.addEventListener('click',()=>{pkg=Number(a.dataset.package);step=1;render()}));
 buyer.elements.cpf.addEventListener('input',e=>{const d=e.target.value.replace(/\D/g,'').slice(0,11);e.target.value=d.replace(/^(\d{3})(\d)/,'$1.$2').replace(/^(\d{3})\.(\d{3})(\d)/,'$1.$2.$3').replace(/\.(\d{3})(\d{1,2})$/,'.$1-$2')});
-let sandboxEnabled=false,submitting=false,reference=null,pollTimer=null,activeStatusAccess=null,attemptKey=sessionStorage.getItem('fbp-attempt-key')||crypto.randomUUID();
+let sandboxEnabled=false,productionEnabled=false,submitting=false,reference=null,pollTimer=null,activeStatusAccess=null,attemptKey=sessionStorage.getItem('fbp-attempt-key')||crypto.randomUUID();
 let previousDigest=sessionStorage.getItem('fbp-attempt-digest');
-const savedOrderKey='fbp-sandbox-order-v1';
+const savedOrderKey=location.hostname==='fenomeno-fb-peninga.vercel.app'?'fbp-prod-order-v1':'fbp-sandbox-order-v1';
 const generate=$('generate-boleto'),result=$('checkout-result'),token=$('sandbox-token');
 function statusText(s){return s==='paid'?'Pago':s==='entry_paid'?'Entrada paga':s==='awaiting_payment'||s==='pending'?'Aguardando pagamento':s==='cancelled'?'Cancelado':s==='refunded'?'Estornado':'Em análise';}
 function presentOrder(o){
@@ -320,7 +320,7 @@ function presentOrder(o){
  $('order-receipt').hidden=false;$('receipt-reference').textContent=o.reference;
  $('receipt-amount').textContent=money(Number(o.amount)||0);
  $('receipt-due').textContent=o.dueDate?new Date(o.dueDate+'T12:00:00').toLocaleDateString('pt-BR'):'Consulte o boleto';
- const url=new URL(o.invoiceUrl);if(url.protocol!=='https:'||url.hostname!=='sandbox.asaas.com')throw Error('Endereço do boleto inválido');
+ const url=new URL(o.invoiceUrl);if(url.protocol!=='https:'||!(productionEnabled?['asaas.com','www.asaas.com'].includes(url.hostname):url.hostname==='sandbox.asaas.com'))throw Error('Endereço do boleto inválido');
  $('invoice-link').href=url.href;$('invoice-link').hidden=false;
  generate.hidden=true;$('sandbox-access').hidden=true;back.hidden=true;next.hidden=true;
  step=4;render();back.hidden=true;next.hidden=true;
@@ -330,7 +330,7 @@ function presentOrder(o){
 async function refreshOrder(){
  if(!reference||!activeStatusAccess)return;
  try{
-  const r=await fetch('/api/order-status-sandbox',{method:'POST',cache:'no-store',headers:{'Content-Type':'application/json'},body:JSON.stringify({reference,statusAccess:activeStatusAccess})});
+  const r=await fetch(productionEnabled?'/api/order-status':'/api/order-status-sandbox',{method:'POST',cache:'no-store',headers:{'Content-Type':'application/json'},body:JSON.stringify({reference,statusAccess:activeStatusAccess})});
   if(r.status===401){clearInterval(pollTimer);result.textContent='Acesso ao pedido expirou. Entre em contato com o suporte para recuperar o pedido.';return;}
   if(!r.ok)throw Error('Consulta temporariamente indisponível');
   const data=await r.json(),s=data.status;
@@ -347,6 +347,11 @@ function restoreOrder(){
  }catch{localStorage.removeItem(savedOrderKey);}
 }
 fetch('/api/checkout-config').then(r=>r.json()).then(config=>{
+ if(config.enabled&&config.environment==='production'&&config.realPaymentsEnabled===true){
+  productionEnabled=true;generate.disabled=false;generate.setAttribute('aria-disabled','false');generate.textContent='GERAR MEU BOLETO';
+  document.querySelector('.wizard-note').textContent='Após o pagamento da entrada, nossa equipe comercial entrará em contato para formalizar o contrato e o saldo restante.';
+  restoreOrder();return;
+ }
  if(config.enabled&&config.environment==='sandbox'&&config.realPaymentsEnabled===false){
   sandboxEnabled=true;if(!reference){$('sandbox-access').hidden=false;generate.disabled=false;generate.setAttribute('aria-disabled','false');generate.textContent='GERAR BOLETO DE TESTE — SANDBOX';}
   document.querySelector('.wizard-note').textContent='Homologação com dados fictícios. A entrada e a quitação são confirmadas apenas após o retorno automático do Asaas.';
@@ -355,8 +360,8 @@ fetch('/api/checkout-config').then(r=>r.json()).then(config=>{
  }
 }).catch(()=>{});
 generate.addEventListener('click',async()=>{
- if(!sandboxEnabled||submitting)return;
- if(!token.value){result.textContent='Informe o token de homologação.';return;}
+ if((!sandboxEnabled&&!productionEnabled)||submitting)return;
+ if(sandboxEnabled&&!token.value){result.textContent='Informe o token de homologação.';return;}
  if(!validateBuyer()){go(3);return;}
  const data={fullName:buyer.elements.fullName.value.trim(),email:buyer.elements.email.value.trim().toLowerCase(),phone:buyer.elements.phone.value.replace(/\D/g,''),cpf:buyer.elements.cpf.value.replace(/\D/g,''),city:buyer.elements.city.value.trim(),state:buyer.elements.state.value,privacy:buyer.elements.privacy.checked,packageType:pkg,quantity:qty,paymentPlan:cash()?'cash':'entry'};
  const digest=[...new Uint8Array(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(JSON.stringify(data))))].map(v=>v.toString(16).padStart(2,'0')).join('');
@@ -364,15 +369,16 @@ generate.addEventListener('click',async()=>{
  previousDigest=digest;sessionStorage.setItem('fbp-attempt-key',attemptKey);sessionStorage.setItem('fbp-attempt-digest',digest);
  submitting=true;generate.disabled=true;back.disabled=true;result.textContent='Registrando pedido e gerando boleto Sandbox…';
  try{
-  const r=await fetch('/api/checkout-sandbox',{method:'POST',headers:{'Content-Type':'application/json','x-checkout-test-token':token.value,'Idempotency-Key':attemptKey},body:JSON.stringify(data)});
+  const headers={'Content-Type':'application/json','Idempotency-Key':attemptKey};if(sandboxEnabled)headers['x-checkout-test-token']=token.value;
+  const r=await fetch(productionEnabled?'/api/checkout':'/api/checkout-sandbox',{method:'POST',headers,body:JSON.stringify(data)});
   const response=await r.json();
   if(!r.ok)throw new Error((response.error||'Não foi possível concluir. Preserve esta tentativa.')+(response.reference?' Pedido: '+response.reference:''));
-  if(response.environment!=='sandbox')throw new Error('Ambiente inválido.');
-  const url=new URL(response.invoiceUrl);if(url.protocol!=='https:'||url.hostname!=='sandbox.asaas.com')throw new Error('Boleto inválido.');
+  if(response.environment!==(productionEnabled?'production':'sandbox'))throw new Error('Ambiente inválido.');
+  const url=new URL(response.invoiceUrl);if(url.protocol!=='https:'||!(productionEnabled?['asaas.com','www.asaas.com'].includes(url.hostname):url.hostname==='sandbox.asaas.com'))throw new Error('Boleto inválido.');
   if(!response.statusAccess)throw new Error('Não foi possível preparar acesso ao pedido; preserve a referência.');
   const saved={reference:response.reference,statusAccess:response.statusAccess,invoiceUrl:url.href,amount:response.amount,dueDate:response.dueDate,savedAt:Date.now()};
   localStorage.setItem(savedOrderKey,JSON.stringify(saved));presentOrder(saved);beginPolling();
-  result.textContent='Boleto de teste gerado. Guarde a referência '+reference+'.';
+  result.textContent='Boleto gerado. Guarde a referência '+reference+'.';
  }catch(e){result.textContent=e.message||'Falha de comunicação. Tente novamente com a mesma tentativa.';}
  finally{submitting=false;generate.disabled=false;back.disabled=false;}
 });
