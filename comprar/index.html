@@ -119,7 +119,7 @@
 .wizard-navigation{display:flex;gap:10px;margin-top:22px;align-items:stretch}
 .wizard-navigation .cta{margin:0;flex:1}
 .wizard-back{background:transparent;border:1px solid #687363;border-radius:12px;color:#f5f4ee;font:800 14px system-ui;min-width:91px;padding:0 15px;cursor:pointer}
-.wizard-note{margin-top:12px;line-height:1.5}
+.wizard-note{margin-top:12px;line-height:1.5}#order-receipt .line{align-items:flex-start}#order-receipt .line strong{max-width:66%;text-align:right;overflow-wrap:anywhere}#receipt-status{font-size:clamp(16px,4.5vw,21px);line-height:1.25}#invoice-link{text-align:center;text-decoration:none}
 .wizard-error{color:#ffd8c7;background:#39231d;border:1px solid #965f4b;border-radius:8px;padding:10px;margin-top:12px;font-size:13px}
 .buyer-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
 .buyer-grid label{display:flex;flex-direction:column;gap:7px;font-size:13px;font-weight:750}
@@ -173,7 +173,7 @@
       <span class="offer-label">CONDIÇÃO ESPECIAL DE LANÇAMENTO</span>
       <h3>3 COBERTURAS</h3>
       <div class="offer-price">R$ 2.000</div>
-      <div class="offer-installments">Até 20x de R$ 100 sem juros</div>
+      <div class="offer-installments">Condição de até 20x de R$ 100 sem juros — entrada no site e saldo com o comercial</div>
       <div class="offer-benefit">Economia de R$ 1.000 em relação à aquisição individual de 3 coberturas.</div>
       <div class="offer-spacer"></div>
       <a class="offer-cta" href="#selecionar-pacote" data-package="3">QUERO O PACOTE DE 3 COBERTURAS</a>
@@ -190,9 +190,9 @@
     <h3 id="how-title">Como funciona a aquisição</h3>
     <ol class="how-steps">
       <li><span class="step-num">1</span><span>Escolha sua condição.</span></li>
-      <li><span class="step-num">2</span><span>O link direciona para o pagamento da primeira parcela/entrada.</span></li>
-      <li><span class="step-num">3</span><span>O pagamento confirma a aquisição dentro da condição disponível.</span></li>
-      <li><span class="step-num">4</span><span>Nosso time comercial entra em contato para formalizar o contrato e orientar os próximos procedimentos.</span></li>
+      <li><span class="step-num">2</span><span>Você paga a entrada para iniciar a aquisição ou o valor integral com 10% de desconto.</span></li>
+      <li><span class="step-num">3</span><span>Após a confirmação do pagamento inicial, a equipe entrará em contato para formalizar as condições restantes.</span></li>
+      <li><span class="step-num">4</span><span>O saldo, quando existir, será tratado no contrato com o time comercial. O pagamento da entrada não significa quitação.</span></li>
     </ol>
   </div>
   <div class="opening"><span>ABERTURA OFICIAL</span><strong>16/10 • 06H</strong></div>
@@ -216,7 +216,7 @@
  <div class="wizard-panel" data-step="2" hidden>
   <h3>Como deseja pagar?</h3>
   <div class="options">
-   <label class="option"><input type="radio" name="pay" value="installments" checked><span><strong>Entrada em boleto</strong><span class="hint">R$ 100 por pacote agora. O comercial formalizará as parcelas posteriores.</span></span></label>
+   <label class="option"><input type="radio" name="pay" value="installments" checked><span><strong>Entrada em boleto</strong><span class="hint">R$ 100 por pacote agora. O saldo será formalizado com o comercial; nenhuma parcela adicional será emitida nesta página.</span></span></label>
    <label class="option"><input type="radio" name="pay" value="cash"><span><strong>Pagamento integral à vista</strong><span class="hint">10% de desconto no valor total da contratação.</span></span></label>
   </div>
   <div class="summary"><div class="line"><span>Valor da contratação</span><strong id="pay-total">R$ 2.000,00</strong></div><div class="line" id="pay-balance-row"><span>Saldo restante</span><strong id="pay-balance">R$ 1.900,00</strong></div><div class="line final"><span id="pay-initial-label">Entrada</span><strong id="pay-initial">R$ 100,00</strong></div></div>
