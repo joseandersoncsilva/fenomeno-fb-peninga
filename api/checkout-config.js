@@ -1,6 +1,11 @@
 import { sandboxReady } from './_lib/sandbox.js';
+import { productionConfiguration } from './_lib/production-guard.js';
 export default function handler(req,res) {
-  res.setHeader('Cache-Control','no-store');
-  if(req.method!=='GET')return res.status(405).json({error:'Method not allowed'});
-  return res.status(200).json({enabled:Boolean(sandboxReady()&&process.env.CHECKOUT_TEST_TOKEN),environment:'sandbox',realPaymentsEnabled:false,version:'sandbox-hardening-v1'});
+ res.setHeader('Cache-Control','no-store');
+ if(req.method!=='GET')return res.status(405).json({error:'Method not allowed'});
+ const prod=productionConfiguration();
+ const realPaymentsEnabled=Object.values(prod).every(Boolean);
+ if(realPaymentsEnabled) return res.status(200).json({enabled:true,environment:'production',realPaymentsEnabled:true,version:'prod-release-gated-v1'});
+ const sandboxEnabled=Boolean(sandboxReady()&&process.env.CHECKOUT_TEST_TOKEN);
+ return res.status(200).json({enabled:sandboxEnabled,environment:sandboxEnabled?'sandbox':'disabled',realPaymentsEnabled:false,version:'prod-release-gated-v1'});
 }
