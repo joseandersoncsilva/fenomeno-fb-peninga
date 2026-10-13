@@ -10,6 +10,7 @@ export function productionConfiguration() {
    databaseConfigured: env.FBP_PROD_SUPABASE_URL===expectedUrl && Boolean(env.FBP_PROD_SUPABASE_SECRET_KEY),
    asaasConfigured:Boolean(env.ASAAS_API_KEY),
    webhookConfigured:Boolean(env.FBP_PROD_ASAAS_WEBHOOK_TOKEN),
+   statusSecretConfigured:Boolean(env.FBP_PROD_STATUS_SECRET && env.FBP_PROD_STATUS_SECRET.length>=32),
    explicitlyEnabled:env.FBP_PRODUCTION_PAYMENTS_ENABLED==='true',
    runningInProduction:env.VERCEL_ENV==='production'
  };
@@ -33,4 +34,16 @@ export async function productionDb(path,options={}) {
  if(!res.ok)throw new Error('Production database operation failed: '+res.status);
  const payload=await res.text();
  return payload.trim()?JSON.parse(payload):null;
+}
+
+export async function productionAsaas(path,{method='GET',body}={}) {
+ assertProductionPaymentsAllowed();
+ const response=await fetch('https://api.asaas.com/v3'+path,{
+  method,signal:AbortSignal.timeout(12000),redirect:'error',
+  headers:{'Content-Type':'application/json',access_token:process.env.ASAAS_API_KEY,'User-Agent':'FBPeningaCheckout/1.0'},
+  ...(body===undefined?{}:{body:JSON.stringify(body)})
+ });
+ if(!response.ok)throw new Error('Production Asaas HTTP '+response.status);
+ if(response.status===204)return null;
+ return response.json();
 }
