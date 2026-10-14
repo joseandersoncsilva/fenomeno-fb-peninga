@@ -11,6 +11,7 @@ export default function handler(req,res){
     asaasAccountKey:p.asaasConfigured,
     webhookAuthentication:p.webhookConfigured,
     orderAccessSecret:p.statusSecretConfigured,
+    abuseProtection:p.abuseProtectionConfigured,
     explicitRelease:p.explicitlyEnabled
    }
  });

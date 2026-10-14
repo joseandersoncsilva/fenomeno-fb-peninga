@@ -1,0 +1,6 @@
+{
+  "name": "Fenômeno FB Peninga — Checkout produção",
+  "domains": ["fenomeno-fb-peninga.vercel.app"],
+  "mode": "managed",
+  "clearance_level": "no_clearance"
+}

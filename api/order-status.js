@@ -1,10 +1,10 @@
-import { productionDb as db, assertProductionPaymentsAllowed } from './_lib/production-guard.js';
+import { productionDb as db, assertProductionStatusAllowed } from './_lib/production-guard.js';
 
 import { verifyProductionStatusAccess as verifyStatusAccess } from './_lib/production-status-access.js';
 export default async function handler(req,res) {
   res.setHeader('Cache-Control','no-store');
   if(req.method!=='POST')return res.status(405).json({error:'Method not allowed'});
-  try{assertProductionPaymentsAllowed();}catch{return res.status(503).json({error:'Real payments disabled'});}
+  try{assertProductionStatusAllowed();}catch{return res.status(503).json({error:'Real payments disabled'});}
   const reference=req.body?.reference;
   if(!/^FBP-[A-F0-9]{12}$/.test(reference||''))return res.status(400).json({error:'Invalid reference'});
   if(!verifyStatusAccess(reference,req.body?.statusAccess))return res.status(401).json({error:'Invalid or expired order access'});

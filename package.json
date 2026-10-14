@@ -1,0 +1,17 @@
+{
+  "name": "fenomeno-fb-peninga",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node --test tests/*.test.js",
+    "build": "node scripts/build.mjs",
+    "test:browser": "node scripts/verify-browser.mjs"
+  },
+  "engines": {
+    "node": "24.x"
+  },
+  "devDependencies": {
+    "@electric-sql/pglite": "0.3.14",
+    "playwright": "1.57.0"
+  }
+}
