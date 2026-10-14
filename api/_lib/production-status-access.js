@@ -1,8 +1,8 @@
 import { createHmac,timingSafeEqual } from 'node:crypto';
-import { assertProductionPaymentsAllowed } from './production-guard.js';
+import { assertProductionStatusAllowed } from './production-guard.js';
 const purpose='fbp-prod-status-v1',ttl=7*86400;
 function sign(payload) {
- assertProductionPaymentsAllowed();
+ assertProductionStatusAllowed();
  return createHmac('sha256',process.env.FBP_PROD_STATUS_SECRET).update(purpose+'.'+payload).digest('base64url');
 }
 export function issueProductionStatusAccess(reference) {

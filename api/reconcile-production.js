@@ -1,5 +1,5 @@
 import { timingSafeEqual } from 'node:crypto';
-import { productionDb as db,productionAsaas as asaas,assertProductionPaymentsAllowed } from './_lib/production-guard.js';
+import { productionDb as db,productionAsaas as asaas,assertProductionIntegrationAllowed } from './_lib/production-guard.js';
 
 function authorized(provided, expected) {
  if(typeof provided!=='string'||typeof expected!=='string'||expected.length<32)return false;
@@ -9,7 +9,7 @@ function authorized(provided, expected) {
 export default async function handler(req,res) {
  res.setHeader('Cache-Control','no-store');
  if(req.method!=='POST')return res.status(405).json({error:'Method not allowed'});
- try{assertProductionPaymentsAllowed();}catch{return res.status(503).json({error:'Production disabled'});}
+ try{assertProductionIntegrationAllowed();}catch{return res.status(503).json({error:'Production disabled'});}
  if(!authorized(req.headers['x-reconciliation-secret'],process.env.FBP_PROD_RECONCILE_SECRET))
    return res.status(401).json({error:'Unauthorized'});
  const reference=req.body?.reference;

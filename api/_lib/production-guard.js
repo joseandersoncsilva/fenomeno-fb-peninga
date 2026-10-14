@@ -9,8 +9,9 @@ export function productionConfiguration() {
  return {
    databaseConfigured: env.FBP_PROD_SUPABASE_URL===expectedUrl && Boolean(env.FBP_PROD_SUPABASE_SECRET_KEY),
    asaasConfigured:Boolean(env.ASAAS_API_KEY),
-   webhookConfigured:Boolean(env.FBP_PROD_ASAAS_WEBHOOK_TOKEN),
+   webhookConfigured:Boolean(env.FBP_PROD_ASAAS_WEBHOOK_TOKEN && env.FBP_PROD_ASAAS_WEBHOOK_TOKEN.length>=32),
    statusSecretConfigured:Boolean(env.FBP_PROD_STATUS_SECRET && env.FBP_PROD_STATUS_SECRET.length>=32),
+   abuseProtectionConfigured:Boolean(env.FBP_TURNSTILE_SECRET_KEY && env.FBP_TURNSTILE_SITE_KEY && /^https:\/\/[^/]+$/.test(env.FBP_CHECKOUT_ORIGIN || '')),
    explicitlyEnabled:env.FBP_PRODUCTION_PAYMENTS_ENABLED==='true',
    runningInProduction:env.VERCEL_ENV==='production'
  };
@@ -21,8 +22,18 @@ export function assertProductionPaymentsAllowed() {
  // The final go-live still requires explicit approval, correct receiver, and tests.
  return true;
 }
+// Reading/reconciling existing payments remains available during a sales pause.
+export function assertProductionIntegrationAllowed() {
+ const s=productionConfiguration();
+ if(!s.databaseConfigured||!s.asaasConfigured||!s.runningInProduction)
+  throw new Error('Production integration unavailable');
+}
+export function assertProductionStatusAllowed() {
+ assertProductionIntegrationAllowed();
+ if(!productionConfiguration().statusSecretConfigured)throw new Error('Status unavailable');
+}
 export async function productionDb(path,options={}) {
- assertProductionPaymentsAllowed();
+ assertProductionIntegrationAllowed();
  const {method='GET',body,prefer}=options;
  const res=await fetch(expectedUrl+'/rest/v1/'+path,{
   method,signal:AbortSignal.timeout(12000),redirect:'error',
@@ -37,7 +48,8 @@ export async function productionDb(path,options={}) {
 }
 
 export async function productionAsaas(path,{method='GET',body}={}) {
- assertProductionPaymentsAllowed();
+ if(method==='GET')assertProductionIntegrationAllowed();
+ else assertProductionPaymentsAllowed();
  const response=await fetch('https://api.asaas.com/v3'+path,{
   method,signal:AbortSignal.timeout(12000),redirect:'error',
   headers:{'Content-Type':'application/json',access_token:process.env.ASAAS_API_KEY,'User-Agent':'FBPeningaCheckout/1.0'},

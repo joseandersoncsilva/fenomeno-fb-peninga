@@ -1,3 +1,5 @@
+import { protectCheckout } from './_lib/checkout-protection.js';
+import { quote, validatePayment } from './_lib/production-payment.js';
 import { createHash } from 'node:crypto';
 import { productionDb as db,productionAsaas as asaas,assertProductionPaymentsAllowed } from './_lib/production-guard.js';
 import { issueProductionStatusAccess as issueStatusAccess } from './_lib/production-status-access.js';
@@ -33,14 +35,20 @@ export default async function handler(req,res) {
   res.setHeader('Cache-Control','no-store');
   if(req.method!=='POST')return res.status(405).json({error:'Method not allowed'});
   try{assertProductionPaymentsAllowed();}catch{return res.status(503).json({error:'Real payments disabled'});}
-  // Go-live review must include server-side abuse prevention before enabling the flag.
+
   const data=normalizedBuyer(req.body);
   const key=req.headers['idempotency-key'];
   if(!data||typeof key!=='string'||! /^[A-Za-z0-9_-]{16,100}$/.test(key))return res.status(400).json({error:'Dados ou chave de tentativa inválidos'});
   const hash=createHash('sha256').update(JSON.stringify(data)).digest('hex');
   let reservation;
   try {
+    const protection=await protectCheckout(req, data);
+    if(!protection.ok){
+      if(protection.status===429)res.setHeader('Retry-After','900');
+      return res.status(protection.status).json({error:protection.error});
+    }
     reservation=await db('rpc/reserve_production_checkout',{method:'POST',body:{p_key:key,p_hash:hash,p_data:data}});
+    if(reservation.limited)return res.status(429).json({error:'Limite de pedidos atingido. Entre em contato com o suporte.'});
     if(reservation.conflict)return res.status(409).json({error:'A tentativa já existe com dados diferentes.'});
     if(!reservation.claimed) {
       if(reservation.request.status==='completed'&&reservation.request.response)
@@ -48,6 +56,9 @@ export default async function handler(req,res) {
       return res.status(409).json({error:'Pedido em processamento ou conciliação. Não inicie outra compra.',code:'CHECKOUT_IN_PROGRESS'});
     }
     const {customer,order}=reservation;
+    const price=quote(data);
+    if(order.initial_due_cents!==price.initialCents || order.total_cents!==price.totalCents)
+      throw new Error('Invalid reserved price');
     let payerId=customer.asaas_customer_id;
     if(!payerId) {
       const matches=await asaas('/customers?externalReference='+encodeURIComponent(customer.id)+'&limit=2');
@@ -71,15 +82,18 @@ export default async function handler(req,res) {
       description:'FB Peninga - '+order.public_reference+' - '+(data.paymentPlan==='entry'?'entrada':'a vista'),
       externalReference:order.public_reference}});
     const verified=await asaas('/payments/'+encodeURIComponent(payment.id));
+    validatePayment(verified,{paymentId:payment.id,reference:order.public_reference,customerId:payerId,amountCents:price.initialCents});
     const url=verified.invoiceUrl;
     if(typeof url!=='string'||!url.startsWith('https://www.asaas.com/')&&!url.startsWith('https://asaas.com/'))throw new Error('Invalid invoice URL');
     const result=await db('rpc/apply_production_payment',{method:'POST',body:{p_remote:verified}});
+    if(result.ignored||result.reference!==order.public_reference||result.reconciliationRequired)throw new Error('Payment requires review');
     const response={reference:order.public_reference,invoiceUrl:url,amount:order.initial_due_cents/100,
       environment:'production',dueDate:verified.dueDate||null,orderStatus:result.orderStatus,notice:'Cobrança referente à contratação FB Peninga'};
     await db('checkout_requests?idempotency_key=eq.'+encodeURIComponent(key),{method:'PATCH',body:{
       status:'completed',response,updated_at:new Date().toISOString()},prefer:'return=minimal'});
     return res.status(201).json({...response,statusAccess:issueStatusAccess(order.public_reference)});
   } catch {
+    if(!reservation)return res.status(503).json({error:'Checkout temporariamente indisponível. Tente novamente com a mesma tentativa.'});
     // A remote success followed by a persistence failure must never create another charge.
     console.error('Checkout Production requires reconciliation');
     if(reservation?.claimed)try {
