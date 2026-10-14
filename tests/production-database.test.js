@@ -9,14 +9,8 @@ const reserve=(key='fixture-key-12345',hash='a'.repeat(64),d=data)=>call('reserv
 const apply=(remote,event=null)=>call('apply_production_payment',[remote,event]);
 async function payment(){const r=await reserve();await db.query("update customers set asaas_customer_id='cus_fixture'");return {id:'pay_fixture',customer:'cus_fixture',externalReference:r.order.public_reference,billingType:'BOLETO',value:100,status:'PENDING'};}
 test.before(async()=>{
- await db.exec(`
- create role anon; create role authenticated; create role service_role;
- create table customers(id uuid primary key default gen_random_uuid(), full_name text,email text,phone text,tax_id text,city text,state text,asaas_customer_id text,created_at timestamptz default now());
- create table orders(id uuid primary key default gen_random_uuid(), customer_id uuid references customers(id),public_reference text unique default ('FBP-'||upper(substr(replace(gen_random_uuid()::text,'-',''),1,12))),offer_type text,package_quantity integer,coverage_quantity integer,payment_plan text,total_cents integer,initial_due_cents integer,remaining_balance_cents integer,status text default 'pending',reconciliation_required boolean default false,created_at timestamptz default now(),updated_at timestamptz default now());
- create table payments(id uuid primary key default gen_random_uuid(),order_id uuid references orders(id),asaas_payment_id text unique,billing_type text,installment_count integer,amount_cents integer,status text,payment_url text,due_date date,paid_at timestamptz,updated_at timestamptz default now());
- create table checkout_requests(idempotency_key text primary key,request_hash text,order_id uuid references orders(id),status text default 'processing',response jsonb,created_at timestamptz default now(),updated_at timestamptz default now());
- create table asaas_webhook_events(asaas_event_id text primary key,asaas_payment_id text,event_type text,processed_at timestamptz,processing_error text);
- `);
+ await db.exec('create role anon; create role authenticated; create role service_role;');
+ await db.exec(await readFile(new URL('./fixtures/production-schema.sql',import.meta.url),'utf8'));
  await db.exec(await readFile(new URL('../db/production-hardening.sql',import.meta.url),'utf8'));
 });
 test.beforeEach(async()=>{await db.exec('truncate customers,orders,payments,checkout_requests,asaas_webhook_events,production_checkout_limits cascade');});
@@ -52,14 +46,14 @@ test('SQL remote payment identity rejects wrong/missing amount, customer, type a
  assert.equal((await db.query('select count(*)::integer as n from payments')).rows[0].n,0);
 });
 test('SQL entry is not paid in full; duplicate/stale events do not regress receipt or duplicate payment',async()=>{
- const remote=await payment();await db.query("insert into asaas_webhook_events values ('evt_fixture','pay_fixture','PAYMENT_RECEIVED',null,null)");
+ const remote=await payment();await db.query("insert into asaas_webhook_events (asaas_event_id,asaas_payment_id,event_type,payload) values ('evt_fixture','pay_fixture','PAYMENT_RECEIVED','{}')");
  const result=await apply({...remote,status:'RECEIVED'},'evt_fixture');assert.equal(result.orderStatus,'entry_paid');assert.equal(result.remainingBalanceCents,190000);
  assert.equal((await apply(remote,'evt_fixture')).duplicate,true);assert.equal((await apply(remote)).orderStatus,'entry_paid');
  assert.equal((await db.query('select count(*)::integer as n from payments')).rows[0].n,1);
  await apply({...remote,status:'REFUNDED'});assert.equal((await apply({...remote,status:'RECEIVED'})).orderStatus,'refunded');
 });
 test('SQL transaction failure leaves event unacknowledged for retry',async()=>{
- const remote=await payment();await db.query("insert into asaas_webhook_events values ('evt_fixture','pay_fixture','PAYMENT_RECEIVED',null,null)");
+ const remote=await payment();await db.query("insert into asaas_webhook_events (asaas_event_id,asaas_payment_id,event_type,payload) values ('evt_fixture','pay_fixture','PAYMENT_RECEIVED','{}')");
  await assert.rejects(apply({...remote,value:1},'evt_fixture'));
  assert.equal((await db.query('select processed_at from asaas_webhook_events')).rows[0].processed_at,null);
  assert.equal((await apply({...remote,status:'RECEIVED'},'evt_fixture')).orderStatus,'entry_paid');
@@ -84,4 +78,12 @@ test('SQL cash settlement is fully paid; cancellation cannot regress to pending'
  const remote={id:'pay_cash',customer:'cus_fixture',externalReference:r.order.public_reference,billingType:'BOLETO',value:1800,status:'RECEIVED'};
  const paid=await apply(remote);assert.equal(paid.orderStatus,'paid');assert.equal(paid.remainingBalanceCents,0);
  await apply({...remote,status:'DELETED'});assert.equal((await apply({...remote,status:'PENDING'})).orderStatus,'cancelled');
+});
+test('hardening reapplies on the production schema without deleting existing fixtures',async()=>{
+ const remote=await payment();await apply({...remote,status:'RECEIVED'});
+ const before=(await db.query('select id,status,total_cents,remaining_balance_cents from orders')).rows;
+ await db.exec(await readFile(new URL('../db/production-hardening.sql',import.meta.url),'utf8'));
+ assert.deepEqual((await db.query('select id,status,total_cents,remaining_balance_cents from orders')).rows,before);
+ assert.equal((await db.query('select count(*)::integer as n from payments')).rows[0].n,1);
+ assert.equal((await apply(remote)).orderStatus,'entry_paid');
 });

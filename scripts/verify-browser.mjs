@@ -15,7 +15,7 @@ for(const [name,width,height] of [['desktop',1440,1000],['mobile',390,844],['sma
  let enabled=true,fail=false,posts=0,keys=[],status='entry_paid';
  await page.route('**/*',async route=>{
   const url=route.request().url();
-  if(url.startsWith('https://challenges.cloudflare.com/'))return route.fulfill({contentType:'application/javascript',body:"window.turnstile={render:(el,o)=>{o.callback('fixture-proof');return 1;},reset:()=>{}}"});
+  if(url.startsWith('https://challenges.cloudflare.com/'))return route.fulfill({contentType:'application/javascript',body:"window.turnstile={render:(el,o)=>{if(o.size!=='compact'||o.action!=='checkout')throw Error('Invalid widget configuration');const box=document.createElement('div');box.style.cssText='width:150px;height:140px';box.textContent='Verificação de teste';document.querySelector(el).append(box);o.callback('fixture-proof');return 1;},reset:()=>{}}"});
   if(url===base+'/api/checkout-config')return route.fulfill({json:{enabled,environment:'production',realPaymentsEnabled:enabled,turnstileSiteKey:'fixture'}});
   if(url===base+'/api/order-status')return route.fulfill({json:{status,remaining_balance_cents:190000}});
   if(url===base+'/api/checkout'){
@@ -29,6 +29,14 @@ for(const [name,width,height] of [['desktop',1440,1000],['mobile',390,844],['sma
  await page.locator('.approved-image img').evaluate(img=>img.decode());
  assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));
  await page.screenshot({path:`artifacts/${name}-sales.png`,fullPage:true});
+ for(const [pkg,plan,expected] of [[1,'installments','1.000,00'],[1,'cash','900,00'],[3,'cash','1.800,00'],[3,'installments','2.000,00']]){
+  await page.locator(`[data-choice="${pkg}"]`).click();
+  await page.locator('#wizard-next').click();await page.locator('#wizard-next').click();
+  await page.locator(`[name="pay"][value="${plan}"]`).check();
+  assert((await page.locator('#pay-total').innerText()).includes(expected));
+  if(plan==='installments')assert((await page.locator('#pay-initial').innerText()).includes('100,00'));
+  await page.locator('#wizard-back').click();await page.locator('#wizard-back').click();
+ }
  for(let i=0;i<3;i++)await page.locator('#wizard-next').click();
  await page.locator('#wizard-next').click();assert(await page.locator('#wizard-error').isVisible());
  for(const [field,value] of Object.entries({fullName:'Comprador Ficticio',cpf:'52998224725',phone:'11900000000',email:'fixture@example.com',city:'Cidade Teste'}))await page.locator(`[name="${field}"]`).fill(value);

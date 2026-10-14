@@ -13,7 +13,7 @@ Validado em 14/10/2026. Base: `feat/supabase-asaas-backend`, commit `6d702f40bc6
 
 ## Evidências executadas
 
-- `npm test`: 38 testes em 4 arquivos, aprovados. Inclui 10 testes com PostgreSQL embarcado (PGlite), sem conexão com Supabase. O esquema mínimo das tabelas é uma fixture; as funções e a tabela de limites são carregadas diretamente de `db/production-hardening.sql`.
+- `npm test`: 39 testes em 4 arquivos, aprovados. Inclui 11 testes com PostgreSQL embarcado (PGlite), sem conexão com Supabase. O esquema das tabelas foi atualizado a partir de consulta somente de leitura ao catálogo de produção; as funções e a tabela de limites são carregadas diretamente de `db/production-hardening.sql`.
 - Casos de endpoint invocando os handlers: checkout desligado **503**; webhook GET **405**; webhook sem token/token inválido **401**; webhook autenticado com consulta remota simulada **200**; repetição **200** sem reaplicar; falha remota/identidade divergente **503**. Clientes não conseguem forjar pago. Nenhuma chamada real a Asaas/Turnstile foi feita.
 - PostgreSQL: preços das quatro ofertas, replay, chave alternativa, conflito, limite de pedidos e tentativas, identidade/valor incorreto, entrada/saldo, quitação à vista, estorno, evento antigo, cancelamento, falha com rollback e permissões públicas.
 - `npm run build`: aprovado; saída pública exclui consoles de homologação e arquivos internos.
@@ -52,3 +52,5 @@ Testes não dependem de credenciais. Variáveis fictícias de habilitação exis
 ## Reversão
 
 Desligar vendas com `FBP_PRODUCTION_PAYMENTS_ENABLED=false` impede novas emissões e mantém webhook/status/conciliação funcionando. Não reemitir cobrança após timeout: usar a referência e o conciliador autorizado. Não remover pedidos, pagamentos ou eventos para tentar novamente.
+
+Atualização de preparação: consulte `PREPARACAO_PRODUCAO_PR5.md` para estado atual do domínio, Turnstile e validação sobre o esquema real.
