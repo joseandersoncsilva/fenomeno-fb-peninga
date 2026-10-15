@@ -43,9 +43,16 @@ export async function productionDb(path,options={}) {
   ...(body===undefined?{}:{body:JSON.stringify(body)})
  });
  if(!res.ok){
-  let code='unknown';
-  try {const err=await res.json();code=String(err.code||'unknown').slice(0,24);}catch{}
-  console.error('Production DB request failed',JSON.stringify({status:res.status,code,operation:path.startsWith('rpc/')?path.split('?')[0]:'table'}));
+  let code='unknown',reason='redacted';
+  try {
+   const err=await res.json();code=String(err.code||'unknown').slice(0,24);
+   const safeReasons=new Set(['Payment identity or amount mismatch','Payment amount mismatch','Payment customer mismatch',
+     'Recurring or installment payment rejected','Payment ownership mismatch','Unsupported payment billing type',
+     'Unregistered PIX payment','Event identity mismatch','Invalid payment identity','Payment reference mismatch',
+     'Checkout order not yet registered','Multiple initial charges require review']);
+   if(err.code==='P0001'&&safeReasons.has(err.message))reason=err.message;
+  }catch{}
+  console.error('Production DB request failed',JSON.stringify({status:res.status,code,reason,operation:path.startsWith('rpc/')?path.split('?')[0]:'table'}));
   throw new Error('Production database operation failed: '+res.status);
  }
  const payload=await res.text();
