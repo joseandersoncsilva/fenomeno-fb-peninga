@@ -3,7 +3,7 @@
   "outputDirectory": "public",
   "headers": [
     {
-      "source": "/painel/:path*",
+      "source": "/painel(.*)",
       "headers": [
         {
           "key": "Cache-Control",
