@@ -23,6 +23,7 @@ export default async function handler(req,res) {
     if(logged[0].processed_at)return res.status(200).json({received:true,duplicate:true});
     const remote=await asaas('/payments/'+encodeURIComponent(event.payment.id));
     if(remote.id!==event.payment.id)throw new Error('Payment identity mismatch');
+    console.info('Production payment verification shape',JSON.stringify({status:remote.status,billingType:remote.billingType,installmentPresent:remote.installment!=null,subscriptionPresent:remote.subscription!=null,paymentDatePresent:remote.paymentDate!=null,remoteReferenceMatchesCheckout:/^FBP-[A-F0-9]{12}$/.test(remote.externalReference||'')}));
     const result=await db('rpc/apply_production_payment',{method:'POST',body:{p_remote:remote,p_event_id:event.id}});
     console.info('Production webhook processed',JSON.stringify({eventId:event.id,eventType:event.event,
       reference:result.reference||null,orderStatus:result.orderStatus||null,ignored:Boolean(result.ignored)}));
