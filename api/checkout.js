@@ -66,10 +66,16 @@ export default async function handler(req,res) {
       if(matches.data?.length===1)payerId=matches.data[0].id;
       else {
         const payer=await asaas('/customers',{method:'POST',body:{name:data.fullName,email:data.email,
-          cpfCnpj:data.cpf,externalReference:customer.id,notificationDisabled:true}});
+          cpfCnpj:data.cpf,mobilePhone:data.phone,externalReference:customer.id,notificationDisabled:true}});
         payerId=payer.id;
       }
       await db('customers?id=eq.'+customer.id,{method:'PATCH',body:{asaas_customer_id:payerId},prefer:'return=minimal'});
+    }
+    // Keep an existing payer's mobile phone in sync without creating a duplicate customer.
+    const remotePayer=await asaas('/customers/'+encodeURIComponent(payerId));
+    if(remotePayer.id!==payerId)throw new Error('Payer identity mismatch');
+    if(!remotePayer.mobilePhone) {
+      await asaas('/customers/'+encodeURIComponent(payerId),{method:'PUT',body:{mobilePhone:data.phone}});
     }
     // Reservation is claimed only once. Never retry this POST after a timeout.
     // An uncertain result is looked up by externalReference and otherwise requires review.
