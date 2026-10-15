@@ -1,0 +1,19 @@
+const $=id=>document.getElementById(id);
+const money=c=>new Intl.NumberFormat('pt-BR',{style:'currency',currency:'BRL'}).format(c/100);
+const date=s=>new Intl.DateTimeFormat('pt-BR',{timeZone:'America/Sao_Paulo',dateStyle:'short',timeStyle:'short'}).format(new Date(s));
+const labels={pending:'Pendente',awaiting_payment:'Aguardando pagamento',entry_paid:'Entrada paga',paid:'Pago',payment_review:'Em revisão',cancelled:'Cancelado',refunded:'Estornado',partially_refunded:'Estorno parcial'};
+let busy=false,timer,expiry,generation=0;
+function clear(){ generation++;clearTimeout(expiry); $('dashboard').hidden=true;$('logout').hidden=true;$('login').hidden=false;$('metrics').replaceChildren();$('orders').replaceChildren();$('auto').checked=false;clearInterval(timer); }
+function element(tag,text,className){const e=document.createElement(tag);e.textContent=text;if(className)e.className=className;return e;}
+async function api(action,body){const response=await fetch('/api/sales-dashboard?action='+action,{method:body?'POST':'GET',credentials:'same-origin',cache:'no-store',headers:body?{'Content-Type':'application/json'}:{},...(body?{body:JSON.stringify(body)}:{})});const data=await response.json();if(!response.ok){if(response.status===401)clear();throw Error(data.error||'Painel indisponível.');}return data;}
+async function refresh(){if(busy)return;const requestGeneration=generation;busy=true;$('refresh').disabled=true;try{const data=await api('data');if(requestGeneration!==generation)return;clearTimeout(expiry);expiry=setTimeout(()=>{clear();$('message').textContent='Sessão expirada. Entre novamente.';},Math.max(0,data.expiresAt-Date.now()));$('login').hidden=true;$('dashboard').hidden=false;$('logout').hidden=false;$('message').textContent='';$('metrics').replaceChildren();
+ const m=data.metrics;for(const [name,value] of [['Pedidos gerados',m.orders],['Pedidos com entrada recebida',m.entryReceived],['Recebido no checkout',money(m.receivedCents)],['Valor dos contratos',money(m.contractedCents)],['Pagamentos aguardando',m.pendingPayments],['Pedidos em revisão',m.reviewOrders]]){const card=element('div','','metric');card.append(element('span',name),element('strong',value));$('metrics').append(card);}
+ $('orders').replaceChildren();for(const o of data.orders){const card=element('article','','order');card.append(element('h3',o.buyer),element('span',labels[o.status]||o.status,'status'));const dl=element('dl','','details');for(const [name,value] of [['Horário (Brasília)',date(o.createdAt)],['Telefone',o.phone],['Pacote',o.package==='package_3'?'3 coberturas':'1 cobertura'],['Quantidade',o.quantity],['Total do contrato',money(o.totalCents)],['Pagamento inicial',money(o.initialCents)],['Referência',o.reference]]){const group=element('div','');group.append(element('dt',name),element('dd',value));dl.append(group);}card.append(dl);$('orders').append(card);}
+ if(!data.orders.length)$('orders').append(element('p','Nenhum pedido registrado.'));$('updated').textContent='Atualizado em '+date(data.updatedAt)+' (Brasília)';
+ }catch(e){$('message').textContent=e.message;}finally{busy=false;$('refresh').disabled=false;}}
+$('login-form').addEventListener('submit',async e=>{e.preventDefault();const button=e.target.querySelector('button');button.disabled=true;const secret=$('secret').value;$('secret').value='';try{await api('login',{secret});await refresh();}catch(e){$('message').textContent=e.message;}finally{button.disabled=false;}});
+$('refresh').addEventListener('click',refresh);
+$('logout').addEventListener('click',async()=>{clear();try{await api('logout',{});$('message').textContent='Sessão encerrada.';}catch(e){$('message').textContent=e.message;}});
+$('auto').addEventListener('change',()=>{clearInterval(timer);if($('auto').checked)timer=setInterval(()=>{if(!document.hidden)refresh();},60000);});
+window.addEventListener('pagehide',clear);
+window.addEventListener('pageshow',()=>refresh());

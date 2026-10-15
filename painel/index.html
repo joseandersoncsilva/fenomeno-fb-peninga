@@ -1,0 +1,9 @@
+<!doctype html>
+<html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex,nofollow"><title>Vendas · Fenômeno FB Peninga</title><link rel="stylesheet" href="/painel/style.css"><script src="/painel/app.js" defer></script></head>
+<body><main><header><div><p class="eyebrow">FENÔMENO FB PENINGA · ACESSO PRIVADO</p><h1>Acompanhamento de vendas</h1></div><button id="logout" hidden>Sair</button></header>
+<section id="login"><h2>Entre para acompanhar</h2><p>Use a credencial privada de acompanhamento. A sessão dura uma hora.</p><form id="login-form"><label for="secret">Credencial de acesso</label><input id="secret" type="password" autocomplete="current-password" required maxlength="256"><button type="submit">Entrar</button></form></section>
+<p id="message" role="status" aria-live="polite"></p>
+<section id="dashboard" hidden><div class="toolbar"><div><h2>Visão geral</h2><p id="updated">Carregando…</p></div><div class="actions"><label><input id="auto" type="checkbox"> Atualizar a cada 60s</label><button id="refresh">Atualizar agora</button></div></div>
+<div id="metrics" class="metrics"></div><p class="note">Valores brutos registrados no Supabase. Recebido inclui apenas RECEIVED e RECEIVED_IN_CASH; CONFIRMED ainda aguarda recebimento. Estornos e contestações não são estimados. Contratos incluem todos os pedidos gerados, inclusive cancelados. Parcelas comerciais futuras não são recebimentos.</p>
+<h2>Compras recentes</h2><p>Últimos 50 pedidos · horários de Brasília · dados pessoais restritos a esta sessão.</p><div id="orders" class="orders"></div></section>
+<footer>Somente leitura · sem ações de cobrança ou alteração de pedidos</footer></main></body></html>
