@@ -5,7 +5,8 @@
   "scripts": {
     "test": "node --test tests/*.test.js",
     "build": "node scripts/build.mjs",
-    "test:browser": "node scripts/verify-browser.mjs"
+    "test:browser": "node scripts/verify-browser.mjs",
+    "test:dashboard-browser": "node scripts/verify-dashboard-browser.mjs"
   },
   "engines": {
     "node": "24.x"
