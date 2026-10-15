@@ -44,8 +44,16 @@ export default async function handler(req,res){
  res.setHeader('Vary','Cookie');
  const secret=process.env.FBP_SALES_ACCESS_SECRET;
  if(process.env.VERCEL_ENV!=='production'||typeof secret!=='string'||secret.length<32||
-  !/^https:\/\/[^/]+$/.test(process.env.FBP_CHECKOUT_ORIGIN||'')||process.env.FBP_PROD_SUPABASE_URL!==url||!process.env.FBP_PROD_SUPABASE_SECRET_KEY)
+  !/^https:\/\/[^/]+$/.test(process.env.FBP_CHECKOUT_ORIGIN||'')||process.env.FBP_PROD_SUPABASE_URL!==url||!process.env.FBP_PROD_SUPABASE_SECRET_KEY) {
+  console.warn('Sales dashboard configuration incomplete',JSON.stringify({
+    production:process.env.VERCEL_ENV==='production',
+    accessSecretLongEnough:typeof secret==='string'&&secret.length>=32,
+    validOrigin:/^https:\/\/[^/]+$/.test(process.env.FBP_CHECKOUT_ORIGIN||''),
+    databaseUrlMatches:process.env.FBP_PROD_SUPABASE_URL===url,
+    databaseKeyPresent:Boolean(process.env.FBP_PROD_SUPABASE_SECRET_KEY)
+  }));
   return res.status(503).json({error:'Painel indisponível.'});
+ }
  const action=req.query?.action||'data';
  const method=action==='data'?'GET':'POST';
  if(!['data','login','logout'].includes(action)||req.method!==method)return res.status(405).json({error:'Método não permitido.'});
