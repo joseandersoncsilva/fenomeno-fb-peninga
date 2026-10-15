@@ -42,7 +42,12 @@ export async function productionDb(path,options={}) {
     'Content-Type':'application/json',...(prefer?{Prefer:prefer}:{})},
   ...(body===undefined?{}:{body:JSON.stringify(body)})
  });
- if(!res.ok)throw new Error('Production database operation failed: '+res.status);
+ if(!res.ok){
+  let code='unknown';
+  try {const err=await res.json();code=String(err.code||'unknown').slice(0,24);}catch{}
+  console.error('Production DB request failed',JSON.stringify({status:res.status,code,operation:path.startsWith('rpc/')?path.split('?')[0]:'table'}));
+  throw new Error('Production database operation failed: '+res.status);
+ }
  const payload=await res.text();
  return payload.trim()?JSON.parse(payload):null;
 }
