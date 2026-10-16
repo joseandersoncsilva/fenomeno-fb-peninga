@@ -1,3 +1,4 @@
+import { launchStart,isOfficialOrder,commissionFor,summarizeCommissions } from './_lib/sales-commissions.js';
 import { createHash, createHmac, randomBytes, timingSafeEqual } from 'node:crypto';
 const url='https://nnysmymyvsydikdwlprg.supabase.co';
 const cookieName='__Host-fbp_sales';
@@ -22,6 +23,7 @@ async function database(path,body) {
  return response.json();
 }
 export function summarize(orders) {
+ orders=orders.filter(isOfficialOrder);
  const metrics={orders:orders.length,entryReceived:0,receivedCents:0,contractedCents:0,pendingPayments:0,reviewOrders:0};
  for(const order of orders){
   metrics.contractedCents+=order.total_cents;
@@ -80,15 +82,15 @@ export default async function handler(req,res){
   const orders=[];
   // All metrics paginate explicitly. Never silently return Supabase's first 1,000 rows.
   for(let offset=0;offset<=10000;){
-   const page=await database('orders?select=id,total_cents,payment_plan,status,reconciliation_required,payments(status,amount_cents)&order=created_at.desc,id.desc&limit=500&offset='+offset);
+   const page=await database('orders?select=id,public_reference,created_at,total_cents,payment_plan,status,reconciliation_required,payments(status,amount_cents)&order=created_at.desc,id.desc&limit=500&offset='+offset);
    if(!Array.isArray(page))throw Error('Invalid response');
    if(page.length===0)break;
    orders.push(...page);offset+=page.length;
    if(orders.length>10000)throw Error('Dashboard capacity exceeded');
   }
-  const recent=await database('orders?select=public_reference,created_at,offer_type,package_quantity,total_cents,initial_due_cents,status,customers(full_name,phone)&order=created_at.desc,id.desc&limit=50');
+  const recent=await database('orders?select=public_reference,created_at,offer_type,package_quantity,total_cents,initial_due_cents,status,reconciliation_required,payments(status),customers(full_name,phone)&order=created_at.desc,id.desc&limit=50');
   const rows=recent.map(o=>({reference:o.public_reference,createdAt:o.created_at,buyer:o.customers?.full_name||'Não informado',phone:o.customers?.phone||'Não informado',
-   package:o.offer_type,quantity:o.package_quantity,totalCents:o.total_cents,initialCents:o.initial_due_cents,status:o.status}));
-  return res.status(200).json({metrics:summarize(orders),orders:rows,expiresAt:Number(token.split('.')[0])*1000,updatedAt:new Date().toISOString()});
+   package:o.offer_type,quantity:o.package_quantity,totalCents:o.total_cents,initialCents:o.initial_due_cents,status:o.status,official:isOfficialOrder(o),commission:commissionFor(o)}));
+  return res.status(200).json({periodStart:launchStart,metrics:summarize(orders),commissions:summarizeCommissions(orders),orders:rows,expiresAt:Number(token.split('.')[0])*1000,updatedAt:new Date().toISOString()});
  }catch{return res.status(503).json({error:'Não foi possível atualizar. Tente novamente.'});}
 }
