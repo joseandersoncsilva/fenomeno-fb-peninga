@@ -254,6 +254,7 @@
   <div id="checkout-challenge"></div>
   <p id="checkout-result" role="status"></p><a id="invoice-link" class="cta" target="_blank" rel="noopener noreferrer" hidden>ABRIR BOLETO SANDBOX</a>
   <div id="order-receipt" class="summary" hidden aria-live="polite"><h3>Seu pedido</h3><div class="line"><span>Referência</span><strong id="receipt-reference"></strong></div><div class="line"><span>Valor do boleto</span><strong id="receipt-amount"></strong></div><div class="line"><span>Vencimento</span><strong id="receipt-due"></strong></div><div class="line final"><span>Status</span><strong id="receipt-status">Aguardando pagamento</strong></div><p id="receipt-balance" class="hint"></p><p class="hint">A situação do pagamento é atualizada automaticamente nesta página.</p></div>
+  <button id="new-purchase" class="cta" type="button" hidden style="background:transparent;color:#f5f4ee;border:1px solid #777e6b">FAZER NOVA COMPRA COM OUTROS DADOS</button>
   <p class="hint wizard-note">A geração de boletos será liberada após a abertura das vendas.</p>
  </div>
  <div class="wizard-navigation"><button type="button" id="wizard-back" class="wizard-back" hidden>Voltar</button><button type="button" id="wizard-next" class="cta">CONTINUAR</button></div>
@@ -326,7 +327,7 @@ function presentOrder(o){
  $('receipt-due').textContent=o.dueDate?new Date(o.dueDate+'T12:00:00').toLocaleDateString('pt-BR'):'Consulte o boleto';
  $('invoice-link').textContent=productionContext?'ABRIR MEU BOLETO':'ABRIR BOLETO SANDBOX';
  $('invoice-link').href=url.href;$('invoice-link').hidden=false;
- generate.hidden=true;$('sandbox-access').hidden=true;back.hidden=true;next.hidden=true;
+ generate.hidden=true;$('sandbox-access').hidden=true;$('new-purchase').hidden=false;back.hidden=true;next.hidden=true;
  step=4;render();back.hidden=true;next.hidden=true;
  document.querySelector('[data-step="4"] > .summary').hidden=true;
  document.querySelector('[data-step="4"] > h3').textContent='Acompanhe seu pedido';
@@ -344,10 +345,27 @@ async function refreshOrder(){
  }catch{result.textContent='Não foi possível atualizar agora; tentaremos novamente automaticamente.';}
 }
 function beginPolling(){clearInterval(pollTimer);refreshOrder();pollTimer=setInterval(refreshOrder,15000);}
+function startNewPurchase(){
+ clearInterval(pollTimer);pollTimer=null;reference=null;activeStatusAccess=null;
+ if(savedOrderKey)localStorage.removeItem(savedOrderKey);
+ sessionStorage.removeItem('fbp-attempt-key');sessionStorage.removeItem('fbp-attempt-digest');
+ attemptKey=crypto.randomUUID();previousDigest=null;
+ buyer.reset();buyer.querySelectorAll('input').forEach(input=>{if(input.name!=='privacy')input.value='';});
+ pkg=3;qty=1;step=0;antiBotToken='';
+ $('order-receipt').hidden=true;$('invoice-link').hidden=true;$('new-purchase').hidden=true;
+ $('generate-boleto').hidden=false;$('sandbox-access').hidden=!sandboxEnabled;
+ document.querySelector('[data-step="4"] > .summary').hidden=false;
+ document.querySelector('[data-step="4"] > h3').textContent='Revise sua compra';
+ $('receipt-reference').textContent='';$('review-name').textContent='';result.textContent='Nova compra iniciada. Confira os dados do novo comprador antes de gerar a cobrança.';
+ if(challengeId!==null&&window.turnstile)window.turnstile.reset(challengeId);
+ else if(productionEnabled)fetch('/api/checkout-config',{cache:'no-store'}).then(r=>r.json()).then(c=>{if(c.turnstileSiteKey)loadChallenge(c.turnstileSiteKey)}).catch(()=>{});
+ render();$('selecionar-pacote').scrollIntoView({behavior:'smooth',block:'start'});
+}
+$('new-purchase').addEventListener('click',startNewPurchase);
 function restoreOrder(){
  try{const o=JSON.parse(localStorage.getItem(savedOrderKey)||'null');
   if(!o||!o.reference||!o.statusAccess||!o.invoiceUrl||!o.savedAt||Date.now()-o.savedAt>7*86400000){localStorage.removeItem(savedOrderKey);return;}
-  presentOrder(o);beginPolling();result.textContent='Pedido recuperado neste dispositivo, sem gerar nova cobrança.';
+  presentOrder(o);beginPolling();result.textContent='Pedido anterior recuperado neste navegador. Se outra pessoa vai comprar, clique em FAZER NOVA COMPRA COM OUTROS DADOS.';
  }catch{localStorage.removeItem(savedOrderKey);}
 }
 function loadChallenge(sitekey){
